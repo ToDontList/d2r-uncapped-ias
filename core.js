@@ -44,8 +44,22 @@ export function dualEnabled(s){
     (s.attack==='whirl'&&s.char==='bar')
   ));
 }
+// Barbarian two-handed swords have two A1 grip animations:
+// 1HS (16 FPD) if wielded in one hand with a shield/second weapon;
+// 2HS (18 FPD) if wielded in both hands. Both have the same weapon WSM.
+// Whirlwind uses a separate hit-interval model; it always treats two-handed
+// swords as one-handed in that model, so the grip selector does not affect it.
+export function barbarianSwordGrip(s,weapon){
+  if(s.char!=='bar'||s.form!=='human'||weapon.type!=='twoSword')return null;
+  if(s.attack==='whirl')return 'one';
+  if(dualEnabled(s))return 'one';
+  return s.swordGrip==='one'?'one':'two';
+}
 export function getMotion(s,weapon){
   if(num(s.overrideFrames)>0)return num(s.overrideFrames);
+  const grip=barbarianSwordGrip(s,weapon);
+  if(grip==='one')return MOTION.bar.oneSwing;
+  if(grip==='two')return MOTION.bar.twoSword;
   return MOTION[s.char]?.[weapon.type]||16;
 }
 function singleFPS(fpd,eias,form,skill){

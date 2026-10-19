@@ -7,3 +7,9 @@
 .buff-grid .skill-ias-output.negative{color:#8fc3ff;}
 .buff-grid .skill-ias-output.conditional{color:#c1b79c;}
 .buff-grid .skill-ias-output[hidden]{display:none!important;}
+
+/* v1.4 — Barbarian two-handed-sword grip mode (1HS / 2HS) */
+.sword-grip-control{margin:14px 0 0;padding:13px 14px 14px;border:1px solid #a3875c88;border-radius:10px;background:#b98c5210}
+.sword-grip-control .field.block{margin-top:0}
+.sword-grip-control .helper{margin-top:8px}
+.sword-grip-control[hidden]{display:none!important}
