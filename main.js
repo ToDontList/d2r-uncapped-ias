@@ -1,4 +1,4 @@
-import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES} from './data.js';
+import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlDualWeaponAllowed} from './data.js';
 import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num} from './core.js';
 const $=id=>document.getElementById(id);
 const defaults={char:'ama',form:'human',attack:'normal',dual:false,weaponMain:WEAPONS.find(w=>w.name.startsWith('재벌린'))?.id||'w0',weaponOff:WEAPONS.find(w=>w.name.startsWith('시미터'))?.id||'w0',wsmMain:null,wsmOff:null,iasGear:0,iasMain:0,iasOff:0,cap:'none',overrideFrames:0,fan:0,frenzy:0,bos:0,how:0,wolf:0,maul:0,purge:0,rancor:0,lethargy:0,freeze:0,decrepify:0,other:0,slow:0,cleave:0,mirrored:0,chilled:false};
@@ -11,7 +11,7 @@ function restore(){let fromUrl=null;try{fromUrl=new URL(location.href).searchPar
 function persist(){try{localStorage.setItem('ias_reimagined_v1',packed())}catch(e){}}
 function weaponFor(hand){const item=WEAPONS.find(w=>w.id===s[hand==='main'?'weaponMain':'weaponOff'])||WEAPONS[0];const wsm=hand==='main'?s.wsmMain:s.wsmOff;return {...item,wsm:wsm===null?item.wsm:num(wsm,item.wsm)};}
 function refreshWeapons(hand){const main=hand==='main';const search=$(main?'searchMain':'searchOff').value.trim().toLowerCase(),select=$(main?'weaponMain':'weaponOff');const current=s[main?'weaponMain':'weaponOff'];const prevSearchResult=WEAPONS.find(w=>w.id===current);
- const allowed=(w)=>s.attack==='dthrow'?w.group==='투척 무기'||w.group==='투창':s.attack==='dragonclaw'?w.type==='claw':s.attack==='strafe'?['bow','xbow'].includes(w.type):s.attack==='lf'?['oneThrust','throwing'].includes(w.type):true;
+ const allowed=(w)=>s.attack==='whirl'&&s.dual?whirlDualWeaponAllowed(w):s.attack==='dthrow'?w.group==='투척 무기'||w.group==='투창':s.attack==='dragonclaw'?w.type==='claw':s.attack==='strafe'?['bow','xbow'].includes(w.type):s.attack==='lf'?['oneThrust','throwing'].includes(w.type):true;
  const items=WEAPONS.filter(w=>allowed(w)&&(!search||w.name.toLowerCase().includes(search)||w.group.includes(search)));
  const groups=[...new Set(items.map(w=>w.group))];select.innerHTML='';for(const group of groups){const gp=document.createElement('optgroup');gp.label=group;for(const w of items.filter(w=>w.group===group)){const opt=document.createElement('option');opt.value=w.id;opt.textContent=`${w.name}    (WSM ${padSign(w.wsm)})`;gp.appendChild(opt)}select.appendChild(gp)}
  if(items.some(w=>w.id===current))select.value=current;else if(items.length){select.value=items[0].id;s[main?'weaponMain':'weaponOff']=items[0].id;s[main?'wsmMain':'wsmOff']=null;}
@@ -64,14 +64,20 @@ function renderTable(result){const hand=result.dual&&activeHand==='off'?'off':'m
  }
  // Preserve manual scrolling after future input edits; button tabs scroll current in view.
 }
-function render(){const main=weaponFor('main'),off=weaponFor('off');const required=DUAL_SKILLS.has(s.attack),dualAvailable=['bar','ass'].includes(s.char)&&s.attack==='normal';const dual=required||(dualAvailable&&s.dual);
- $('dual').disabled=required||!dualAvailable;$('dual').checked=required||s.dual&&dualAvailable;$('dualNotice').textContent=required?'이 스킬은 쌍수 필수':dualAvailable?'일반 공격에서 쌍수를 사용한다면 켜세요':'';
+function render(){const main=weaponFor('main'),off=weaponFor('off');const required=DUAL_SKILLS.has(s.attack);
+ const whirlOptional=s.char==='bar'&&s.attack==='whirl';
+ const dualAvailable=(['bar','ass'].includes(s.char)&&s.attack==='normal')||whirlOptional;
+ const dual=required||(dualAvailable&&s.dual);
+ $('dual').disabled=required||!dualAvailable;$('dual').checked=required||s.dual&&dualAvailable;$('dualNotice').textContent=required?'이 스킬은 쌍수 필수':whirlOptional?'훨윈드는 한손/쌍수 모두 가능':dualAvailable?'일반 공격에서 쌍수를 사용한다면 켜세요':'';
+ $('offHandHelper').textContent=whirlOptional?'훨윈드는 두 무기의 속도를 각각 계산하고, 쌍수 판정 간격은 평균 후 올림한 추정값으로 표시합니다.':'쌍수 스킬은 양손 IAS를 각각 반영합니다.';
  $('offBox').hidden=!dual;$('offTab').hidden=!dual;if(!dual)activeHand='main';
  $('offTab').classList.toggle('active',activeHand==='off');document.querySelector('[data-hand="main"]').classList.toggle('active',activeHand==='main');
  $('weaponGrid').classList.toggle('two-weapons',dual);
  const result=calculate(s,main,dual?off:null);last=result;const [label,detail,kind]=accuracyTag(s.attack,s.form);
  $('accuracy').textContent=label;$('accuracy').className='status'+(kind==='unavailable'?' warn':kind==='approx'?' dim':'');$('accuracyDetail').textContent=`${label}: ${detail}`;
- writePlain('currentFrame',fstr(result.avg));writePlain('aps',result.hitRate===null?'정확한 프레임 계산 불가':`초당 약 ${result.hitRate.toFixed(2)}타 · 25FPS 기준`);
+ $('frameLabel').textContent=result.whirlDual?'쌍수 훨윈드 예상 판정 간격':'평균 공격 프레임';
+ writePlain('currentFrame',fstr(result.avg));
+ writePlain('aps',result.whirlDual?'두 무기별 추정 프레임을 평균 후 올림 · 타격 횟수 미검증':result.hitRate===null?'정확한 프레임 계산 불가':`초당 약 ${result.hitRate.toFixed(2)}타 · 25FPS 기준`);
  writePlain('totalEias',result.dual?`${padSign(result.mainE.raw)} / ${padSign(result.offE.raw)}`:padSign(result.mainE.raw));
  const mainRows=getBreakpoints(s,main),next=nearest(mainRows,capEias(result.mainE.raw,result.cap)).next;
  writePlain('nextBP',next?`${fstr(next.fpa)}F · ${padSign(next.eias)} EIAS`:'최고 구간');
@@ -82,13 +88,14 @@ function render(){const main=weaponFor('main'),off=weaponFor('off');const requir
  if(result.cap===null)messages.push('현재 “상한 없음”은 이론 시뮬레이션입니다. 실제 사용 중인 패치가 600이라면 상한 +500 옵션을 선택해야 합니다.');
  if(kind==='approx'||kind==='theory')messages.push('표시된 프레임은 특수 시퀀스의 이론값 또는 근사값이며 실제 판정 검증 전입니다.');
  if(kind==='unavailable')messages.push('임의로 프레임을 추정하지 않고 계산을 보류했습니다.');
- if(result.dual)messages.push('쌍수의 손별 표시값은 무기 IAS를 나눠 계산한 추정치입니다. 실제 번갈아 공격하는 타격 시점은 다를 수 있습니다.');
+ if(result.whirlDual)messages.push('훨윈드 쌍수: 각 무기의 WSM 및 IAS로 손별 추정 프레임을 구한 뒤 평균·올림했습니다. 아래 프레임표는 선택한 손의 개별 추정치로, 쌍수 공용 판정 간격표가 아닙니다. 1~2F 실제 타격 검사는 패치 실측이 필요합니다.');
+ else if(result.dual)messages.push('쌍수의 손별 표시값은 무기 IAS를 나눠 계산한 추정치입니다. 실제 번갈아 공격하는 타격 시점은 다를 수 있습니다.');
  $('resultMessage').textContent=messages.join(' ');
  renderBuffIndicators(buffs(s));renderBuffDetails();renderTable(result);
 }
 function safeNumber(v,min=-9999,max=100000){return Math.min(max,Math.max(min,num(v)));}
 function updateWeapon(hand,newId){if(!WEAPONS.some(w=>w.id===newId))return;const key=hand==='main'?'weaponMain':'weaponOff',wsm=hand==='main'?'wsmMain':'wsmOff';s[key]=newId;s[wsm]=null;$(hand==='main'?'wsmMain':'wsmOff').value=weaponFor(hand).wsm;persist();render();}
-function setup(){setupBuffIndicators();restore();sync();$('class').addEventListener('change',e=>{s.char=e.target.value;s.attack='normal';s.dual=false;sync();persist()});$('attack').addEventListener('change',e=>{s.attack=e.target.value;s.dual=DUAL_SKILLS.has(s.attack);$('searchMain').value='';$('searchOff').value='';refreshWeapons('main');refreshWeapons('off');render();persist()});$('form').addEventListener('change',e=>setField('form',e.target.value));$('dual').addEventListener('change',e=>setField('dual',e.target.checked));$('cap').addEventListener('change',e=>setField('cap',e.target.value));$('chilled').addEventListener('change',e=>setField('chilled',e.target.checked));
+function setup(){setupBuffIndicators();restore();sync();$('class').addEventListener('change',e=>{s.char=e.target.value;s.attack='normal';s.dual=false;sync();persist()});$('attack').addEventListener('change',e=>{s.attack=e.target.value;s.dual=DUAL_SKILLS.has(s.attack);$('searchMain').value='';$('searchOff').value='';refreshWeapons('main');refreshWeapons('off');render();persist()});$('form').addEventListener('change',e=>setField('form',e.target.value));$('dual').addEventListener('change',e=>setField('dual',e.target.checked,true));$('cap').addEventListener('change',e=>setField('cap',e.target.value));$('chilled').addEventListener('change',e=>setField('chilled',e.target.checked));
  for(const id of ['iasGear','iasMain','iasOff','overrideFrames'])$(id).addEventListener('input',e=>setField(id,safeNumber(e.target.value,0)));
  for(const el of document.querySelectorAll('[data-field]'))el.addEventListener('input',e=>setField(el.dataset.field,safeNumber(e.target.value,-1000,3000)));
  for(const hand of ['main','off']){

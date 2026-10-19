@@ -38,7 +38,12 @@ export function buffs(s){
   const entries=[['광신',fan],['광분 (최대 중첩)',frenzy],['폭발적인 속도',bos],['늑대인간',wolf],['후려치기',maul],['울버린의 심장 (직접 투자)',how],['주술: 처단',purge],['인장: 무기력',lethargy],['인장: 울분',rancor],['신성한 빙결',freeze],['노화',decrepify],['냉기',chill],['기타 감속',slow],['기타 스킬 공속',own],['가르기',cleave],['거울 칼날',mirrored]];
   return {total:entries.reduce((x,[_k,v])=>x+v,0),entries:entries.filter(([_k,v])=>v!==0),values:{fan,frenzy,bos,wolf,maul,how,purge,rancor,lethargy,freeze,decrepify,other:own,slow,cleave,mirrored},how,fan,frenzy,bos};
 }
-export function dualEnabled(s){return DUAL_SKILLS.has(s.attack)||(s.dual&&['bar','ass'].includes(s.char)&&s.attack==='normal');}
+export function dualEnabled(s){
+  return DUAL_SKILLS.has(s.attack)||(!!s.dual&&(
+    (s.attack==='normal'&&['bar','ass'].includes(s.char))||
+    (s.attack==='whirl'&&s.char==='bar')
+  ));
+}
 export function getMotion(s,weapon){
   if(num(s.overrideFrames)>0)return num(s.overrideFrames);
   return MOTION[s.char]?.[weapon.type]||16;
@@ -75,7 +80,10 @@ export function frameFromEias(s,weapon,eias){
 }
 export function handEias(s,main,off,hand){
   const dual=dualEnabled(s)&&!!off;
-  const wsm=dual?Math.trunc((main.wsm+off.wsm)/2):(hand==='off'&&off?off.wsm:main.wsm);
+  // 2.4.3 Whirlwind dual-wield: compute the attack speed for EACH equipped weapon,
+  // then combine attack frames. Frenzy retains its existing averaged-WSM model.
+  const wsm=s.attack==='whirl'?(hand==='off'&&off?off.wsm:main.wsm)
+    :dual?Math.trunc((main.wsm+off.wsm)/2):(hand==='off'&&off?off.wsm:main.wsm);
   const primaryIAS=hand==='off'?num(s.iasOff):num(s.iasMain);
   const item=effectiveItemIAS(num(s.iasGear)+primaryIAS);
   const skill=buffs(s).total;
@@ -90,8 +98,16 @@ export function calculate(s,main,off){
   const dual=dualEnabled(s)&&!!off;
   let offE=null,offF=null;
   if(dual){offE=handEias(s,main,off,'off');offF=frameFromEias(s,off,capEias(offE.raw,cap));}
-  const avg=mainF===null?null:dual?((mainF+offF)/2):mainF;
-  return {cap,dual,mainE,offE,mainF,offF,avg,hitRate:avg?25/avg:null,mainUncapped:frameFromEias(s,main,mainE.raw),offUncapped:dual?frameFromEias(s,off,offE.raw):null};
+  // Blizzard 2.4.3: dual-wield Whirlwind attack frames are averaged and rounded UP.
+  // Each single-hand 'whirl' FPA is still a high-speed THEORETICAL approximation;
+  // the custom cap-removal patch's hit-check loop has not been independently verified.
+  const whirlDual=s.attack==='whirl'&&dual;
+  const avg=mainF===null||dual&&offF===null?null
+    :whirlDual?Math.ceil((mainF+offF)/2)
+    :dual?(mainF+offF)/2:mainF;
+  return {cap,dual,whirlDual,mainE,offE,mainF,offF,avg,
+    hitRate:whirlDual?null:avg?25/avg:null,
+    mainUncapped:frameFromEias(s,main,mainE.raw),offUncapped:dual?frameFromEias(s,off,offE.raw):null};
 }
 // Every transition in theoretical total EIAS from -85..1300, including 1F.
 export function getBreakpoints(s,weapon,{start=-85,end=3000}={}){
@@ -115,7 +131,8 @@ export function nearest(rows,eias){
 // Required *equipment* IAS with the current weapon-IAS retained for one hand.
 export function requiredEquipmentIAS(s,main,off,hand,targetEias){
   const offhand=hand==='off';const weapon=offhand?off:main;
-  const wsm=dualEnabled(s)&&off?Math.trunc((main.wsm+off.wsm)/2):weapon.wsm;
+  const wsm=s.attack==='whirl'?weapon.wsm
+    :dualEnabled(s)&&off?Math.trunc((main.wsm+off.wsm)/2):weapon.wsm;
   const base=buffs(s).total-wsm;
   const req=Math.max(0,Math.ceil(targetEias-base));
   if(req>=120)return null;
@@ -131,6 +148,7 @@ export const ACCURACY={
 export function accuracyTag(attack,form){
   if(CONSTRAINED_SKILLS.has(attack))return ['계산 미지원','고유 시퀀스 자료가 필요하므로 임의의 프레임을 표시하지 않음','unavailable'];
   if(form!=='human')return ['근사 계산','변신 애니메이션 및 롤백 처리는 후속 검증 필요','approx'];
+  if(attack==='whirl')return ['훨윈드 이론 계산','양손 프레임 개별 추정 · 쌍수일 때 평균 올림. 실제 패치 히트체크 검증 전','theory'];
   if(ACCURACY.theoretical.has(attack))return ['상한 해제 이론표','과거 대화에서 정리한 1F 확장 이론값이며 실제 타격 판정 미검증','theory'];
   if(ACCURACY.estimated.has(attack))return ['근사 계산','복합 스킬 시퀀스/롤백의 실제 판정 프레임과 다를 수 있음','approx'];
   return ['기본 모션 계산','클래스별 일반 모션을 기반으로 계산. 리이매진드 애니메이션 플러그인 사용 시 차이 가능','base'];

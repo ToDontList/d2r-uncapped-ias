@@ -47,4 +47,8 @@ export const ATTACKS={
   war:[['normal','일반 공격','normal'],['cleave','가르기 / Cleave','special'],['mirrored','거울 칼날 / Mirrored Blades','special']]
 };
 export const DUAL_SKILLS=new Set(['frenzy','double','dthrow','dragonclaw']);
+// Whirlwind: optional dual wield, unlike forced two-weapon Frenzy.
+// Includes two-handed swords that the Barbarian can equip one per hand.
+export const WHIRL_DUAL_TYPES=new Set(['oneSwing','oneThrust','twoSword','throwing']);
+export const whirlDualWeaponAllowed=weapon=>WHIRL_DUAL_TYPES.has(weapon.type);
 export const CONSTRAINED_SKILLS=new Set(['impale','charge','cleave','mirrored','traps']);
