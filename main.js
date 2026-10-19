@@ -1,0 +1,85 @@
+import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES} from './data.js';
+import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num} from './core.js';
+const $=id=>document.getElementById(id);
+const defaults={char:'ama',form:'human',attack:'normal',dual:false,weaponMain:WEAPONS.find(w=>w.name.startsWith('재벌린'))?.id||'w0',weaponOff:WEAPONS.find(w=>w.name.startsWith('시미터'))?.id||'w0',wsmMain:null,wsmOff:null,iasGear:0,iasMain:0,iasOff:0,cap:'none',overrideFrames:0,fan:0,frenzy:0,bos:0,how:0,wolf:0,maul:0,purge:0,rancor:0,lethargy:0,freeze:0,decrepify:0,other:0,slow:0,cleave:0,mirrored:0,chilled:false};
+let s={...defaults},activeHand='main',last=null,watchInputs=false;
+const packed=()=>JSON.stringify(s);
+const padSign=n=>n>0?`+${n}`:String(n);
+const fstr=n=>n===null?'—':Number.isInteger(n)?String(n):n.toFixed(1);
+function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>$('toast').classList.remove('show'),2400)}
+function restore(){let fromUrl=null;try{fromUrl=new URL(location.href).searchParams.get('s');if(fromUrl)fromUrl=JSON.parse(decodeURIComponent(escape(atob(fromUrl))));}catch(e){fromUrl=null}let stored=null;try{stored=JSON.parse(localStorage.getItem('ias_reimagined_v1')||'null')}catch(e){}s={...defaults,...(fromUrl||stored||{})};if(!CLASSES.some(c=>c[0]===s.char))s.char='ama';if(!WEAPONS.some(w=>w.id===s.weaponMain))s.weaponMain=defaults.weaponMain;if(!WEAPONS.some(w=>w.id===s.weaponOff))s.weaponOff=defaults.weaponOff;}
+function persist(){try{localStorage.setItem('ias_reimagined_v1',packed())}catch(e){}}
+function weaponFor(hand){const item=WEAPONS.find(w=>w.id===s[hand==='main'?'weaponMain':'weaponOff'])||WEAPONS[0];const wsm=hand==='main'?s.wsmMain:s.wsmOff;return {...item,wsm:wsm===null?item.wsm:num(wsm,item.wsm)};}
+function refreshWeapons(hand){const main=hand==='main';const search=$(main?'searchMain':'searchOff').value.trim().toLowerCase(),select=$(main?'weaponMain':'weaponOff');const current=s[main?'weaponMain':'weaponOff'];const prevSearchResult=WEAPONS.find(w=>w.id===current);
+ const allowed=(w)=>s.attack==='dthrow'?w.group==='투척 무기'||w.group==='투창':s.attack==='dragonclaw'?w.type==='claw':s.attack==='strafe'?['bow','xbow'].includes(w.type):s.attack==='lf'?['oneThrust','throwing'].includes(w.type):true;
+ const items=WEAPONS.filter(w=>allowed(w)&&(!search||w.name.toLowerCase().includes(search)||w.group.includes(search)));
+ const groups=[...new Set(items.map(w=>w.group))];select.innerHTML='';for(const group of groups){const gp=document.createElement('optgroup');gp.label=group;for(const w of items.filter(w=>w.group===group)){const opt=document.createElement('option');opt.value=w.id;opt.textContent=`${w.name}    (WSM ${padSign(w.wsm)})`;gp.appendChild(opt)}select.appendChild(gp)}
+ if(items.some(w=>w.id===current))select.value=current;else if(items.length){select.value=items[0].id;s[main?'weaponMain':'weaponOff']=items[0].id;s[main?'wsmMain':'wsmOff']=null;}
+ if(!items.length){select.innerHTML='<option value="">검색 결과가 없습니다</option>';}
+ if(prevSearchResult&&!items.some(w=>w.id===current)&&search){/* Input search updates selection to first match */}
+ $(main?'wsmMain':'wsmOff').value=weaponFor(hand).wsm;
+}
+function refreshClass(){const cls=$('class');cls.innerHTML=CLASSES.map(([id,ko,en])=>`<option value="${id}">${ko} · ${en}</option>`).join('');cls.value=s.char;}
+function refreshAttacks(){const select=$('attack');const avail=ATTACKS[s.char]||ATTACKS.ama;if(!avail.some(a=>a[0]===s.attack))s.attack=avail[0][0];select.innerHTML=avail.map(([id,ko])=>`<option value="${id}">${ko}</option>`).join('');select.value=s.attack;}
+function sync(){watchInputs=false;refreshClass();$('form').value=s.form;refreshAttacks();$('dual').checked=!!s.dual;$('iasGear').value=s.iasGear;$('iasMain').value=s.iasMain;$('iasOff').value=s.iasOff;$('cap').value=s.cap;$('overrideFrames').value=s.overrideFrames;$('chilled').checked=!!s.chilled;document.querySelectorAll('[data-field]').forEach(el=>el.value=s[el.dataset.field]??0);refreshWeapons('main');refreshWeapons('off');watchInputs=true;render();}
+function setField(field,value,updateUI=false){s[field]=value;persist();if(updateUI)sync();else render();}
+function frameText(f){return f===null?'미지원':`${fstr(f)}F`}
+function writePlain(el,text){$(el).textContent=text}
+function renderBuffDetails(){const b=buffs(s),wrap=$('buffDetails');$('buffSum').textContent=padSign(b.total);
+ wrap.replaceChildren();if(!b.entries.length){wrap.textContent='적용 중인 스킬 보너스 없음';return}
+ for(const [name,val] of b.entries){const row=document.createElement('div'),label=document.createElement('span'),value=document.createElement('strong');label.textContent=name;value.textContent=padSign(val);row.append(label,value);wrap.append(row)}
+}
+function renderTable(result){const hand=result.dual&&activeHand==='off'?'off':'main';const primary=weaponFor('main'),weapon=hand==='main'?primary:weaponFor('off');const handE=hand==='main'?result.mainE:result.offE;
+ const effective=capEias(handE.raw,result.cap);const rows=getBreakpoints(s,weapon);const trbody=$('bpRows');trbody.replaceChildren();const current=nearest(rows,effective).current;
+ if(rows.length===0){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=5;td.textContent='이 스킬은 정확한 애니메이션 시퀀스 자료가 없어 프레임표를 제공하지 않습니다.';tr.appendChild(td);trbody.appendChild(tr);return}
+ for(const bp of rows){const tr=document.createElement('tr');const capExceeded=result.cap!==null&&bp.eias>result.cap;const isCurrent=current===bp;
+ if(capExceeded)tr.classList.add('cap-row');if(isCurrent)tr.classList.add('current-row');if(isCurrent)tr.id='tableCurrent';
+ const eq=requiredEquipmentIAS(s,primary,result.dual?weaponFor('off'):null,hand,bp.eias);const cells=[`${fstr(bp.fpa)}F`,padSign(bp.eias),eq===null?'스킬 공속 필요':`${eq.toLocaleString('ko-KR')}%`,bp.aps.toFixed(2),isCurrent?'● 현재':capExceeded?'상한 초과':bp.eias<effective?'달성':'미달'];
+ for(let i=0;i<cells.length;i++){const td=document.createElement('td');td.textContent=cells[i];if(i===4){const span=document.createElement('span');span.className='table-label';span.textContent=cells[i];td.textContent='';td.appendChild(span)}tr.appendChild(td)}trbody.appendChild(tr);
+ }
+ // Preserve manual scrolling after future input edits; button tabs scroll current in view.
+}
+function render(){const main=weaponFor('main'),off=weaponFor('off');const required=DUAL_SKILLS.has(s.attack),dualAvailable=['bar','ass'].includes(s.char)&&s.attack==='normal';const dual=required||(dualAvailable&&s.dual);
+ $('dual').disabled=required||!dualAvailable;$('dual').checked=required||s.dual&&dualAvailable;$('dualNotice').textContent=required?'이 스킬은 쌍수 필수':dualAvailable?'일반 공격에서 쌍수를 사용한다면 켜세요':'';
+ $('offBox').hidden=!dual;$('offTab').hidden=!dual;if(!dual)activeHand='main';
+ $('offTab').classList.toggle('active',activeHand==='off');document.querySelector('[data-hand="main"]').classList.toggle('active',activeHand==='main');
+ $('weaponGrid').classList.toggle('two-weapons',dual);
+ const result=calculate(s,main,dual?off:null);last=result;const [label,detail,kind]=accuracyTag(s.attack,s.form);
+ $('accuracy').textContent=label;$('accuracy').className='status'+(kind==='unavailable'?' warn':kind==='approx'?' dim':'');$('accuracyDetail').textContent=`${label}: ${detail}`;
+ writePlain('currentFrame',fstr(result.avg));writePlain('aps',result.hitRate===null?'정확한 프레임 계산 불가':`초당 약 ${result.hitRate.toFixed(2)}타 · 25FPS 기준`);
+ writePlain('totalEias',result.dual?`${padSign(result.mainE.raw)} / ${padSign(result.offE.raw)}`:padSign(result.mainE.raw));
+ const mainRows=getBreakpoints(s,main),next=nearest(mainRows,capEias(result.mainE.raw,result.cap)).next;
+ writePlain('nextBP',next?`${fstr(next.fpa)}F · ${padSign(next.eias)} EIAS`:'최고 구간');
+ $('handResults').hidden=!result.dual;if(result.dual){writePlain('mainFrame',frameText(result.mainF));writePlain('offFrame',frameText(result.offF));writePlain('mainEias',`총 EIAS ${padSign(result.mainE.raw)}`);writePlain('offEias',`총 EIAS ${padSign(result.offE.raw)}`)}
+ const messages=[];
+ if(result.cap!==null&&result.mainE.raw>result.cap)messages.push(`선택한 패치의 EIAS 상한 +${result.cap}에 도달했습니다. 주무기는 원래 EIAS ${padSign(result.mainE.raw)}지만 계산에는 +${result.cap}만 적용했어요.`);
+ if(result.dual&&result.cap!==null&&result.offE.raw>result.cap)messages.push('보조무기에도 같은 상한을 적용했어요.');
+ if(result.cap===null)messages.push('현재 “상한 없음”은 이론 시뮬레이션입니다. 실제 사용 중인 패치가 600이라면 상한 +500 옵션을 선택해야 합니다.');
+ if(kind==='approx'||kind==='theory')messages.push('표시된 프레임은 특수 시퀀스의 이론값 또는 근사값이며 실제 판정 검증 전입니다.');
+ if(kind==='unavailable')messages.push('임의로 프레임을 추정하지 않고 계산을 보류했습니다.');
+ if(result.dual)messages.push('쌍수의 손별 표시값은 무기 IAS를 나눠 계산한 추정치입니다. 실제 번갈아 공격하는 타격 시점은 다를 수 있습니다.');
+ $('resultMessage').textContent=messages.join(' ');
+ renderBuffDetails();renderTable(result);
+}
+function safeNumber(v,min=-9999,max=100000){return Math.min(max,Math.max(min,num(v)));}
+function updateWeapon(hand,newId){if(!WEAPONS.some(w=>w.id===newId))return;const key=hand==='main'?'weaponMain':'weaponOff',wsm=hand==='main'?'wsmMain':'wsmOff';s[key]=newId;s[wsm]=null;$(hand==='main'?'wsmMain':'wsmOff').value=weaponFor(hand).wsm;persist();render();}
+function setup(){restore();sync();$('class').addEventListener('change',e=>{s.char=e.target.value;s.attack='normal';s.dual=false;sync();persist()});$('attack').addEventListener('change',e=>{s.attack=e.target.value;s.dual=DUAL_SKILLS.has(s.attack);$('searchMain').value='';$('searchOff').value='';refreshWeapons('main');refreshWeapons('off');render();persist()});$('form').addEventListener('change',e=>setField('form',e.target.value));$('dual').addEventListener('change',e=>setField('dual',e.target.checked));$('cap').addEventListener('change',e=>setField('cap',e.target.value));$('chilled').addEventListener('change',e=>setField('chilled',e.target.checked));
+ for(const id of ['iasGear','iasMain','iasOff','overrideFrames'])$(id).addEventListener('input',e=>setField(id,safeNumber(e.target.value,0)));
+ for(const el of document.querySelectorAll('[data-field]'))el.addEventListener('input',e=>setField(el.dataset.field,safeNumber(e.target.value,-1000,3000)));
+ for(const hand of ['main','off']){
+   const name=hand==='main'?'Main':'Off';
+   $('search'+name).addEventListener('input',()=>{refreshWeapons(hand);persist();render()});
+   $('weapon'+name).addEventListener('change',e=>updateWeapon(hand,e.target.value));
+   $('wsm'+name).addEventListener('input',e=>setField(hand==='main'?'wsmMain':'wsmOff',safeNumber(e.target.value,-100,100)));
+ }
+ for(const btn of document.querySelectorAll('[data-hand]'))btn.addEventListener('click',()=>{activeHand=btn.dataset.hand;render();const c=$('tableCurrent');if(c)c.scrollIntoView({block:'nearest',behavior:'smooth'})});
+ $('reset').addEventListener('click',()=>{s={...defaults};$('searchMain').value='';$('searchOff').value='';activeHand='main';sync();persist();toast('모든 설정을 초기화했어요')});
+ $('copyLink').addEventListener('click',async()=>{const url=new URL(location.href);url.searchParams.set('s',btoa(unescape(encodeURIComponent(packed()))));try{await navigator.clipboard.writeText(url.toString());toast('현재 설정 링크를 복사했어요')}catch(e){prompt('링크를 복사하세요',url.toString())}});
+ $('jumpCurrent').addEventListener('click',()=>{const row=$('tableCurrent');if(row){row.scrollIntoView({block:'center',behavior:'smooth'});toast('현재 EIAS 구간을 표시했어요')}else toast('현재 구간을 표시할 수 없습니다')});
+ $('exportCSV').addEventListener('click',()=>{
+  const weaponMain=weaponFor('main'),weaponOff=weaponFor('off');const hands=last?.dual?['main','off']:['main'];const csv=[['손','프레임','필요 총 EIAS','필요 장비 IAS(%)','초당 공격 횟수','상한 초과'].join(',')];
+  for(const hand of hands){const w=hand==='main'?weaponMain:weaponOff;for(const bp of getBreakpoints(s,w)){const req=requiredEquipmentIAS(s,weaponMain,last?.dual?weaponOff:null,hand,bp.eias);csv.push([hand==='main'?'주무기':'보조무기',bp.fpa,bp.eias,req??'스킬 공속 필요',bp.aps.toFixed(3),last?.cap!==null&&bp.eias>last.cap?'Y':'N'].join(','))}}
+  const blob=new Blob(['\ufeff'+csv.join('\r\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='D2R_Reimagined_IAS_breakpoints.csv';document.body.appendChild(a);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);a.remove();toast('프레임표 CSV를 저장했어요')
+ });
+}
+setup();
