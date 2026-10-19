@@ -24,7 +24,8 @@ export function buffs(s){
   const maul=s.form==='bear'&&level('maul')>0?3*(Math.trunc(level('maul')/2)+3):0;
   // Derived from Reimagined 'Wolverine Aura': min(par9 + hard points - 1, 30), par9=6.
   const how=level('how')?Math.min(5+level('how'),30):0;
-  const purge=level('purge')?-Math.min(10+level('purge')-1,30):0;
+  // Hex: Purge uses positive attack-speed passivecalc1 = min(30, ln56) in Reimagined skills.txt.
+  const purge=level('purge')?Math.min(10+level('purge')-1,30):0;
   const lethargy=level('lethargy')?-25:0; // Reimagined ln78 -> par7=-25, par8=0
   const rancor=level('rancor')?5+level('rancor')-1:0;
   const freeze=level('freeze')?-Math.min(50,diminishing(level('freeze'),25,60)):0;
