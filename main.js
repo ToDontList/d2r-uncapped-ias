@@ -1,4 +1,4 @@
-import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlDualWeaponAllowed} from './data.js';
+import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlDualWeaponAllowed,OLD_AUTO_WSM} from './data.js';
 import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num,barbarianSwordGrip,getMotion} from './core.js';
 const $=id=>document.getElementById(id);
 const defaults={char:'ama',form:'human',attack:'normal',dual:false,swordGrip:'two',weaponMain:WEAPONS.find(w=>w.name.startsWith('재벌린'))?.id||'w0',weaponOff:WEAPONS.find(w=>w.name.startsWith('시미터'))?.id||'w0',wsmMain:null,wsmOff:null,iasGear:0,iasMain:0,iasOff:0,cap:'none',overrideFrames:0,fan:0,frenzy:0,bos:0,how:0,wolf:0,maul:0,purge:0,rancor:0,lethargy:0,freeze:0,decrepify:0,other:0,slow:0,cleave:0,mirrored:0,chilled:false};
@@ -7,7 +7,14 @@ const packed=()=>JSON.stringify(s);
 const padSign=n=>n>0?`+${n}`:String(n);
 const fstr=n=>n===null?'—':Number.isInteger(n)?String(n):n.toFixed(1);
 function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>$('toast').classList.remove('show'),2400)}
-function restore(){let fromUrl=null;try{fromUrl=new URL(location.href).searchParams.get('s');if(fromUrl)fromUrl=JSON.parse(decodeURIComponent(escape(atob(fromUrl))));}catch(e){fromUrl=null}let stored=null;try{stored=JSON.parse(localStorage.getItem('ias_reimagined_v1')||'null')}catch(e){}s={...defaults,...(fromUrl||stored||{})};if(!CLASSES.some(c=>c[0]===s.char))s.char='ama';if(!WEAPONS.some(w=>w.id===s.weaponMain))s.weaponMain=defaults.weaponMain;if(!WEAPONS.some(w=>w.id===s.weaponOff))s.weaponOff=defaults.weaponOff;}
+function restore(){let fromUrl=null;try{fromUrl=new URL(location.href).searchParams.get('s');if(fromUrl)fromUrl=JSON.parse(decodeURIComponent(escape(atob(fromUrl))));}catch(e){fromUrl=null}let stored=null;try{stored=JSON.parse(localStorage.getItem('ias_reimagined_v1')||'null')}catch(e){}s={...defaults,...(fromUrl||stored||{})};if(!CLASSES.some(c=>c[0]===s.char))s.char='ama';if(!WEAPONS.some(w=>w.id===s.weaponMain))s.weaponMain=defaults.weaponMain;if(!WEAPONS.some(w=>w.id===s.weaponOff))s.weaponOff=defaults.weaponOff;
+ // v1.5 data migration: a previous default WSM saved as a number is not an intentional
+ // manual override. Reset it if the canonical base changed; preserve all other overrides.
+ for(const hand of ['Main','Off']){
+   const id=s['weapon'+hand],key='wsm'+hand,oldBase=OLD_AUTO_WSM[id];
+   if(oldBase!==undefined&&s[key]!==null&&Number(s[key])===oldBase) s[key]=null;
+ }
+}
 function persist(){try{localStorage.setItem('ias_reimagined_v1',packed())}catch(e){}}
 function weaponFor(hand){const item=WEAPONS.find(w=>w.id===s[hand==='main'?'weaponMain':'weaponOff'])||WEAPONS[0];const wsm=hand==='main'?s.wsmMain:s.wsmOff;return {...item,wsm:wsm===null?item.wsm:num(wsm,item.wsm)};}
 function refreshWeapons(hand){const main=hand==='main';const search=$(main?'searchMain':'searchOff').value.trim().toLowerCase(),select=$(main?'weaponMain':'weaponOff');const current=s[main?'weaponMain':'weaponOff'];const prevSearchResult=WEAPONS.find(w=>w.id===current);
