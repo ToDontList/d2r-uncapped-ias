@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#11131b"><meta name="description" content="D2R Reimagined 공속 상한 해제 계산기. IAS와 스킬 레벨을 입력하고 쌍수 공격 및 1프레임까지의 이론 브레이크포인트를 확인하세요.">
+<title>D2R Reimagined — 공속 제한 해제 계산기</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="top-accent"></div>
+<header class="site-head"><div class="wrap head-row"><a class="logo" href="./"><span class="logo-symbol">◆</span><span><span class="logo-small">DIABLO II · REIMAGINED</span><strong>공격속도 계산기</strong></span></a><div class="head-right"><span class="pill ghost">UNLOCKED IAS</span><span class="build">v1.0 · 실험 계산기</span></div></div></header>
+<main class="wrap">
+<div class="hero"><div class="eyebrow"><span class="green-dot"></span> D2R / REIMAGINED · 25 FPS ENGINE</div><h1>공격 프레임을 <span>끝까지.</span></h1><p>기본 공속 상한을 넘어 <b>1프레임까지</b> 탐색하세요. 양손을 따로 계산하고 전체 프레임표에서 현재 위치를 확인할 수 있습니다.</p><div class="hero-actions"><button class="btn slim" id="copyLink">↗ 현재 설정 공유</button><button class="btn slim secondary" id="reset">↺ 초기화</button></div></div>
+<div class="content-grid">
+  <section class="column input-column" aria-label="공격 설정">
+    <div class="card"><div class="card-head"><div><span class="chapter">01 / ATTACK PROFILE</span><h2>공격 설정</h2></div><span class="tiny-badge">필수 입력</span></div>
+      <div class="fieldgrid"><label class="field"><span>직업</span><select id="class"></select></label><label class="field"><span>형태</span><select id="form"><option value="human">인간형</option><option value="wolf">늑대인간 (근사)</option><option value="bear">곰인간 (근사)</option></select></label></div>
+      <label class="field block"><span>공격 스킬</span><select id="attack"></select></label>
+      <div class="flexline"><label class="check"><input id="dual" type="checkbox"><span>쌍수 무기 (양손 결과 비교)</span></label><span id="dualNotice" class="muted small"></span></div>
+      <div class="weapon-grid" id="weaponGrid"><div class="weapon" id="primaryBox"><div class="weapon-head"><b>주무기</b><span>MAIN HAND</span></div><label class="field block"><span>무기 검색</span><input id="searchMain" type="search" placeholder="시미터, 페이즈 블레이드, 워 액스…" autocomplete="off"></label><label class="field block"><span>무기 베이스</span><select id="weaponMain"></select></label><div class="fieldgrid"><label class="field"><span>무기 WSM</span><input id="wsmMain" type="number" step="1" min="-100" max="100"></label><label class="field"><span>무기 옵션 IAS (%)</span><input id="iasMain" type="number" min="0" max="100000" value="0"></label></div><p class="helper">무기를 선택하면 WSM이 자동으로 입력돼요. 직접 수정할 수도 있어요.</p></div>
+        <div class="weapon" id="offBox" hidden><div class="weapon-head"><b>보조무기</b><span>OFF HAND</span></div><label class="field block"><span>무기 검색</span><input id="searchOff" type="search" placeholder="보조무기 찾기…" autocomplete="off"></label><label class="field block"><span>무기 베이스</span><select id="weaponOff"></select></label><div class="fieldgrid"><label class="field"><span>무기 WSM</span><input id="wsmOff" type="number" step="1" min="-100" max="100"></label><label class="field"><span>무기 옵션 IAS (%)</span><input id="iasOff" type="number" min="0" max="100000" value="0"></label></div><p class="helper">쌍수 스킬은 양손 IAS를 각각 반영합니다.</p></div></div>
+      <label class="field block topline"><span>그 외 장비 IAS (%) <small>갑옷·장갑·장신구 등</small></span><input id="iasGear" type="number" value="0" min="0" max="100000"></label>
+    </div>
+    <div class="card"><div class="card-head"><div><span class="chapter">02 / BUFFS & DEBUFFS</span><h2>스킬 공속 보너스</h2></div><span class="tiny-badge">자동 계산</span></div><p class="section-desc">스킬 레벨을 입력하면 공속 보너스를 합산합니다. 0은 미적용을 의미합니다. <b>울버린의 심장만 직접 투자 포인트</b>를 입력하세요.</p>
+      <div class="buff-grid"><label class="field"><span>광신 <small>Fanaticism</small></span><input data-field="fan" type="number" min="0" max="200" value="0"></label><label class="field"><span>광분 최대 중첩 <small>Frenzy</small></span><input data-field="frenzy" type="number" min="0" max="200" value="0"></label><label class="field"><span>폭발적인 속도 <small>Burst of Speed</small></span><input data-field="bos" type="number" min="0" max="200" value="0"></label><label class="field featured"><span>울버린의 심장 <small>직접 투자</small></span><input data-field="how" type="number" min="0" max="500" value="0"><small class="field-foot">1포인트 +6, 25포인트 +30(최대)</small></label><label class="field"><span>늑대인간 <small>Werewolf</small></span><input data-field="wolf" type="number" min="0" max="200" value="0"></label><label class="field"><span>후려치기 <small>Maul</small></span><input data-field="maul" type="number" min="0" max="200" value="0"></label><label class="field"><span>정화의 저주 <small>Hex: Purge</small></span><input data-field="purge" type="number" min="0" max="200" value="0"></label><label class="field"><span>원한의 인장 <small>Sigil: Rancor</small></span><input data-field="rancor" type="number" min="0" max="200" value="0"></label><label class="field"><span>나태의 인장 <small>Sigil: Lethargy</small></span><input data-field="lethargy" type="number" min="0" max="200" value="0"></label><label class="field"><span>신성한 빙결 <small>Holy Freeze</small></span><input data-field="freeze" type="number" min="0" max="200" value="0"></label><label class="field"><span>노화 <small>Decrepify</small></span><input data-field="decrepify" type="number" min="0" max="1" value="0"></label><label class="field"><span>기타 스킬 IAS <small>SIAS</small></span><input data-field="other" type="number" min="-1000" max="3000" value="0"></label><label class="field"><span>다른 감속 (%)</span><input data-field="slow" type="number" min="0" max="99" value="0"></label><label class="field"><span>가르기 스킬레벨</span><input data-field="cleave" type="number" min="0" max="200" value="0"></label><label class="field"><span>거울 칼날 스킬레벨</span><input data-field="mirrored" type="number" min="0" max="200" value="0"></label></div>
+      <label class="check separate"><input id="chilled" type="checkbox"><span>냉기 상태 (−50 스킬 공속)</span></label>
+      <details class="fold"><summary>적용된 스킬 공속 상세 내역 <span id="buffSum" class="mini-number">+0</span></summary><div id="buffDetails" class="breakdown"></div></details>
+    </div>
+    <div class="card"><div class="card-head"><div><span class="chapter">03 / CALCULATION RULES</span><h2>상한 및 고급 설정</h2></div></div>
+      <label class="field block"><span>공격속도 상한</span><select id="cap"><option value="none">상한 없음 · 이론상 1프레임까지 (기본)</option><option value="500">기존 패치 600 · 총 EIAS 최대 +500</option><option value="924">실험 상한 1024 · 총 EIAS 최대 +924</option><option value="1948">실험 상한 2048 · 총 EIAS 최대 +1948</option></select></label><p class="helper">현재 설치한 패치가 600이라면 반드시 600을 선택해야 실제 제한을 반영합니다. 상한 없음은 미래의 확장 패치를 가정합니다.</p>
+      <details class="fold advanced"><summary>애니메이션 고급 설정</summary><label class="field block"><span>기본 공격 모션 프레임(FPD) 덮어쓰기</span><input id="overrideFrames" type="number" min="0" max="120" value="0"></label><p class="helper">0은 직업·무기별 기본 데이터 사용. 리이매진드의 변경된 모션 프레임을 직접 알고 있을 때만 입력하세요.</p></details>
+    </div>
+  </section>
+  <section class="column result-column" aria-label="계산 결과">
+    <div class="card results"><div class="card-head"><div><span class="chapter">LIVE RESULT</span><h2>현재 공격 프레임</h2></div><span id="accuracy" class="status">모션 계산</span></div>
+      <div class="result-surface"><div class="primary-result"><span>평균 공격 프레임</span><div class="big-number"><strong id="currentFrame">–</strong><b>F</b></div><p id="aps">초당 공격 횟수 —</p></div><div class="result-mini"><div><span>현재 총 EIAS</span><strong id="totalEias">—</strong></div><div><span>다음 프레임</span><strong id="nextBP">—</strong></div></div></div>
+      <div id="handResults" class="hands" hidden><div><span>주무기</span><strong id="mainFrame">— F</strong><small id="mainEias">EIAS —</small></div><div><span>보조무기</span><strong id="offFrame">— F</strong><small id="offEias">EIAS —</small></div></div>
+      <div class="result-message" id="resultMessage" role="status"></div><p class="helper">시뮬레이션은 초당 25프레임 기준입니다. 실제 D2R 내부 최소 타격 간격과 복잡한 시퀀스는 별도 검증이 필요할 수 있습니다.</p>
+    </div>
+    <div class="card"><div class="card-head"><div><span class="chapter">COMPLETE BREAKPOINTS</span><h2>전체 프레임표</h2></div><div class="table-actions"><button class="btn slim secondary" id="jumpCurrent">◎ 현재 위치</button><button class="btn slim secondary" id="exportCSV">↓ CSV 저장</button></div></div><p class="section-desc">공격속도 제한을 제거했을 때의 이론 브레이크포인트 전체를 표시합니다. <b>현재 위치</b>는 밝게 강조하고, 상한을 초과한 구간은 구분합니다.</p>
+      <div class="table-tabs" id="handTabs"><button data-hand="main" class="active">주무기 기준</button><button data-hand="off" id="offTab" hidden>보조무기 기준</button></div>
+      <div class="table-scroll"><table><thead><tr><th>공격 프레임</th><th>필요 총 EIAS</th><th>필요 장비 IAS</th><th>초당 타격</th><th>내 상태</th></tr></thead><tbody id="bpRows"></tbody></table></div>
+      <div class="table-foot"><span class="dot-legend current"></span>현재 구간 <span class="dot-legend limited"></span>설정한 상한 밖 <span class="dot-legend neutral"></span>다른 구간</div>
+    </div>
+    <div class="card note"><span class="chapter">CALCULATION NOTES</span><h2>계산 기준과 검증 범위</h2><div id="accuracyDetail"></div><p>장비 IAS 점감값은 <code>⌊120 × IAS ÷ (120 + IAS)⌋</code>입니다. 총 EIAS는 장비 유효 IAS + 활성 스킬 공속 − 무기 WSM으로 계산합니다. 쌍수 스킬은 양손 무기 IAS를 각각 반영하며, 광분 등의 특수 시퀀스는 별도 근사·이론표를 사용합니다.</p><p><b>패치 주의:</b> 공속 배율의 상한 해제와 실제 스킬 판정 주기 해제는 별개입니다. 표시된 1~2F 결과는 게임 안에서 실측 검증되지 않았습니다.</p><p class="references">자료 기준: D2R Reimagined 스킬 데이터, 공식 <a href="https://www.d2r-reimagined.com/data/ias-calculator" target="_blank" rel="noopener noreferrer">IAS Calculator</a>, <a href="https://github.com/Warren1001/IAS_Calculator" target="_blank" rel="noopener noreferrer">Warren IAS 연구</a>.</p></div>
+  </section>
+</div>
+</main>
+<footer class="wrap foot">독립 커뮤니티 계산기 · Reimagined 및 Diablo II는 해당 권리자에게 귀속됩니다. · 서버 없이 브라우저에서 계산됩니다.</footer>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script type="module" src="./main.js"></script>
+</body></html>
