@@ -13,3 +13,9 @@
 .sword-grip-control .field.block{margin-top:0}
 .sword-grip-control .helper{margin-top:8px}
 .sword-grip-control[hidden]{display:none!important}
+
+/* v1.6 — summon-specific controls; keep player profiles unchanged. */
+.pet-mode #formField,.pet-mode #dualLine,.pet-mode #weaponGrid,.pet-mode #swordGripBox,.pet-mode #iasGearField,.pet-mode #playerBuffCard,.pet-mode #handTabs,.pet-mode .advanced{display:none!important}
+.pet-panel{border:1px solid #8e7b59;border-radius:13px;margin-top:16px;padding:17px;background:#d3b16c0a}
+.pet-panel .pet-head{margin-bottom:17px}.pet-head h3{font-size:18px;color:var(--gold2);margin:5px 0 0}.pet-subpanel{padding:15px 0;border-top:1px solid #3d4254;margin-top:15px}.pet-subtitle{font-size:13px;font-weight:800;color:#e2c9a2;display:block;margin-bottom:12px}.pet-output{font-weight:800;font-size:13px;color:var(--mint);margin-top:12px}.pet-sources{border:1px solid #6a728033;background:#202532;border-radius:9px;padding:12px;color:#c3cbd9;font-size:12px;line-height:1.65;margin:15px 0 0}.pet-panel .field>span{line-height:1.5}.pet-mode .result-message{line-height:1.65}
+@media(max-width:490px){.pet-panel{padding:12px}.pet-panel .fieldgrid{grid-template-columns:1fr}}
