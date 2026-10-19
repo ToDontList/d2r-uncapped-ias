@@ -25,6 +25,31 @@ function sync(){watchInputs=false;refreshClass();$('form').value=s.form;refreshA
 function setField(field,value,updateUI=false){s[field]=value;persist();if(updateUI)sync();else render();}
 function frameText(f){return f===null?'미지원':`${fstr(f)}F`}
 function writePlain(el,text){$(el).textContent=text}
+// Display the calculated active IAS/debuff directly beneath each skill-level input.
+function setupBuffIndicators(){
+ document.querySelectorAll('.buff-grid input[data-field]').forEach(input=>{
+   const foot=document.createElement('small');foot.className='skill-ias-output';
+   foot.dataset.bonusFor=input.dataset.field;foot.hidden=true;
+   input.insertAdjacentElement('afterend',foot);
+ });
+}
+function renderBuffIndicators(b){
+ for(const output of document.querySelectorAll('[data-bonus-for]')){
+   const id=output.dataset.bonusFor,level=Math.max(0,Math.trunc(num(s[id])));
+   let value=b.values[id]??0,conditional=false;
+   if(id==='wolf'&&level>0&&s.form!=='wolf'){
+     value=buffs({...s,form:'wolf'}).values.wolf;conditional=true;
+   }else if(id==='maul'&&level>0&&s.form!=='bear'){
+     value=buffs({...s,form:'bear'}).values.maul;conditional=true;
+   }
+   output.hidden=level===0||value===0;
+   if(!output.hidden){
+     output.textContent=`${value>0?'+':''}${value}% SKILL IAS${conditional?' · 변신 시 적용':''}`;
+     output.classList.toggle('conditional',conditional);
+     output.classList.toggle('negative',value<0);
+   }
+ }
+}
 function renderBuffDetails(){const b=buffs(s),wrap=$('buffDetails');$('buffSum').textContent=padSign(b.total);
  wrap.replaceChildren();if(!b.entries.length){wrap.textContent='적용 중인 스킬 보너스 없음';return}
  for(const [name,val] of b.entries){const row=document.createElement('div'),label=document.createElement('span'),value=document.createElement('strong');label.textContent=name;value.textContent=padSign(val);row.append(label,value);wrap.append(row)}
@@ -59,11 +84,11 @@ function render(){const main=weaponFor('main'),off=weaponFor('off');const requir
  if(kind==='unavailable')messages.push('임의로 프레임을 추정하지 않고 계산을 보류했습니다.');
  if(result.dual)messages.push('쌍수의 손별 표시값은 무기 IAS를 나눠 계산한 추정치입니다. 실제 번갈아 공격하는 타격 시점은 다를 수 있습니다.');
  $('resultMessage').textContent=messages.join(' ');
- renderBuffDetails();renderTable(result);
+ renderBuffIndicators(buffs(s));renderBuffDetails();renderTable(result);
 }
 function safeNumber(v,min=-9999,max=100000){return Math.min(max,Math.max(min,num(v)));}
 function updateWeapon(hand,newId){if(!WEAPONS.some(w=>w.id===newId))return;const key=hand==='main'?'weaponMain':'weaponOff',wsm=hand==='main'?'wsmMain':'wsmOff';s[key]=newId;s[wsm]=null;$(hand==='main'?'wsmMain':'wsmOff').value=weaponFor(hand).wsm;persist();render();}
-function setup(){restore();sync();$('class').addEventListener('change',e=>{s.char=e.target.value;s.attack='normal';s.dual=false;sync();persist()});$('attack').addEventListener('change',e=>{s.attack=e.target.value;s.dual=DUAL_SKILLS.has(s.attack);$('searchMain').value='';$('searchOff').value='';refreshWeapons('main');refreshWeapons('off');render();persist()});$('form').addEventListener('change',e=>setField('form',e.target.value));$('dual').addEventListener('change',e=>setField('dual',e.target.checked));$('cap').addEventListener('change',e=>setField('cap',e.target.value));$('chilled').addEventListener('change',e=>setField('chilled',e.target.checked));
+function setup(){setupBuffIndicators();restore();sync();$('class').addEventListener('change',e=>{s.char=e.target.value;s.attack='normal';s.dual=false;sync();persist()});$('attack').addEventListener('change',e=>{s.attack=e.target.value;s.dual=DUAL_SKILLS.has(s.attack);$('searchMain').value='';$('searchOff').value='';refreshWeapons('main');refreshWeapons('off');render();persist()});$('form').addEventListener('change',e=>setField('form',e.target.value));$('dual').addEventListener('change',e=>setField('dual',e.target.checked));$('cap').addEventListener('change',e=>setField('cap',e.target.value));$('chilled').addEventListener('change',e=>setField('chilled',e.target.checked));
  for(const id of ['iasGear','iasMain','iasOff','overrideFrames'])$(id).addEventListener('input',e=>setField(id,safeNumber(e.target.value,0)));
  for(const el of document.querySelectorAll('[data-field]'))el.addEventListener('input',e=>setField(el.dataset.field,safeNumber(e.target.value,-1000,3000)));
  for(const hand of ['main','off']){

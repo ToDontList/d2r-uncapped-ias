@@ -34,8 +34,8 @@ export function buffs(s){
   const own=num(s.other);
   const cleave=s.attack==='cleave'?diminishing(level('cleave'),10,30):0;
   const mirrored=s.attack==='mirrored'?diminishing(level('mirrored'),10,30):0;
-  const entries=[['광신',fan],['광분 최대 중첩',frenzy],['폭발적인 속도',bos],['늑대인간',wolf],['후려치기',maul],['울버린의 심장 (직접 투자)',how],['정화의 저주',purge],['나태의 인장',lethargy],['원한의 인장',rancor],['신성한 빙결',freeze],['노화',decrepify],['냉기',chill],['기타 감속',slow],['기타 스킬 공속',own],['가르기',cleave],['거울 칼날',mirrored]];
-  return {total:entries.reduce((x,[_k,v])=>x+v,0),entries:entries.filter(([_k,v])=>v!==0),how,fan,frenzy,bos};
+  const entries=[['광신',fan],['광분 (최대 중첩)',frenzy],['폭발적인 속도',bos],['늑대인간',wolf],['후려치기',maul],['울버린의 심장 (직접 투자)',how],['주술: 처단',purge],['인장: 무기력',lethargy],['인장: 울분',rancor],['신성한 빙결',freeze],['노화',decrepify],['냉기',chill],['기타 감속',slow],['기타 스킬 공속',own],['가르기',cleave],['거울 칼날',mirrored]];
+  return {total:entries.reduce((x,[_k,v])=>x+v,0),entries:entries.filter(([_k,v])=>v!==0),values:{fan,frenzy,bos,wolf,maul,how,purge,rancor,lethargy,freeze,decrepify,other:own,slow,cleave,mirrored},how,fan,frenzy,bos};
 }
 export function dualEnabled(s){return DUAL_SKILLS.has(s.attack)||(s.dual&&['bar','ass'].includes(s.char)&&s.attack==='normal');}
 export function getMotion(s,weapon){
