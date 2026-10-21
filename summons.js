@@ -1,4 +1,4 @@
-/* D2R Reimagined summon attack-speed model, v1.6.
+/* D2R Reimagined summon attack-speed model, v1.7.
  * Published breakpoint anchors: The Amazon Basin (LoD / D2R pet animation references).
  * ABOVE last published breakpoint: extrapolation for custom IAS-cap removal, NOT validated.
  * AI delay is separate from attack animation FPA and must never be added as exact hit period.
@@ -22,8 +22,8 @@ export const PET_PROFILES={
   raven:{name:'큰까마귀 / Raven',owner:'dru',animation:'특수 AI 공격',aiDelay:null,frames:[],note:'큰까마귀는 특수 공격 AI 및 타격 시퀀스가 있어 일반 공격 모션 프레임으로 환산할 수 없습니다.'},
   vines:{name:'덩굴 소환 / Vine',owner:'dru',animation:'특수 AI 공격',aiDelay:null,frames:[],note:'덩굴의 독/흡수 동작은 일반 근접 공격 프레임과 다릅니다.'},
   revive:{name:'부활 / Revive',owner:'nec',animation:'원본 몬스터에 따라 다름',aiDelay:null,frames:[],custom:true,note:'부활한 몬스터의 종류별 공격 모션·WSM·AI가 달라서, 직접 측정한 EIAS 0 기준 프레임이 필요합니다.'},
-  goatman:{name:'염소인간 / Summon Goatman',owner:'war',animation:'일반 / 광분 / 가르기 혼합',aiDelay:null,frames:[],custom:true,note:'염소인간은 광분과 가르기를 사용합니다. 아래 수동 입력은 선택한 한 가지 공격 모션의 참고 추정값입니다.'},
-  tainted:{name:'오염된 자 / Summon Tainted',owner:'war',animation:'화염구 발사 · 주문',aiDelay:null,frames:[],custom:true,note:'오염된 자는 화염구를 시전하므로 공격속도 보너스가 화염구 발사 주기와 1:1로 대응하는지는 검증되지 않았습니다.'},
+  goatman:{name:'염소인간 / Summon Goatman',owner:'war',animation:'A1 · 일반 공격',aiDelay:5,fpd:20,frames:[],note:'A1 기본 19F의 이론 애니메이션 계산입니다. 광분·가르기 시퀀스와 실제 타격 주기는 별도입니다.'},
+  tainted:{name:'오염된 자 / Summon Tainted',owner:'war',animation:'A2 · 화염구 모션',aiDelay:15,fpd:10,frames:[],note:'A2 기본 9F의 이론 애니메이션 계산입니다. 실제 화염구 발사 주기는 AI·스킬 선택·대기에 따라 달라집니다.'},
   defiler:{name:'파멸자 / Summon Defiler',owner:'war',animation:'특수 몬스터 공격',aiDelay:null,frames:[],custom:true,note:'파멸자는 특수 공격·연결 AI가 있어 모션 원본 데이터를 직접 측정해야 합니다.'},
   bind:{name:'악마 속박 / Bind Demon',owner:'war',animation:'속박 대상 몬스터 공격',aiDelay:null,frames:[],custom:true,note:'속박 악마의 베이스는 몬스터 종류마다 다릅니다. 직접 측정한 기준 프레임 및 WSM을 입력하세요.'},
 };
@@ -56,8 +56,8 @@ export function petBonuses(s){
  const how=level(s,'petHow')>0?Math.min(5+level(s,'petHow'),30):0;
  const slow=-Math.min(99,Math.max(0,num(s.petSlow)));
  const other=num(s.petOther);
- const item=effectiveItemIAS(Math.max(0,num(s.petItemIAS)));
- const wsm=num(s.petWSM);
+ const item=p.fpd?0:effectiveItemIAS(Math.max(0,num(s.petItemIAS)));
+ const wsm=p.fpd?0:num(s.petWSM);
  const entries=[['소환 스킬 자체',own],['악마 숙련 / Demonic Mastery',mastery],['포식 / Engorge',engorge],['광신 오라 / Fanaticism',fan],['울버린의 심장 / Heart of Wolverine',how],['감속',slow],['기타 소환수 스킬 공속',other]];
  const total=entries.reduce((x,e)=>x+e[1],0)+item-wsm;
  return {total,item,wsm,skillTotal:total-item+wsm,levelBonus:own,mastery,engorge,fan,how,entries:entries.filter(e=>e[1]!==0)};
@@ -70,6 +70,11 @@ const fpaApprox=(baseline,eias)=>{
 // Exact published breakpoints up to last source anchor; beyond that,
 // a clearly labeled high-speed *extrapolation* down to a theoretical 1F.
 export function petFpa(s,eias){
+ const p=petProfile(s);
+ if(p?.fpd){
+   const speed=Math.max(1,Math.floor(256*(100+Math.max(-99,num(eias)))/100));
+   return Math.max(1,Math.ceil(p.fpd*256/speed)-1);
+ }
  const frames=petFrames(s);
  if(frames.length===0){
    const custom=num(s.petBaseFpa);
@@ -89,7 +94,7 @@ export function petBreakpoints(s,{start=-85,end=3000}={}){
  const result=[];let prev=null;
  for(let e=start;e<=end;e++){
    const f=petFpa(s,e);
-   if(f!==prev){result.push({eias:e,fpa:f,aps:25/f,extrapolated: e>Math.max(-85,petFrames(s).at(-1)?.eias??-85)});prev=f;}
+   if(f!==prev){result.push({eias:e,fpa:f,aps:25/f,extrapolated: !!petProfile(s)?.fpd || e>Math.max(-85,petFrames(s).at(-1)?.eias??-85)});prev=f;}
    if(f===1)break;
  }
  return result;
@@ -114,3 +119,4 @@ export function petRequiredItemIAS(s,target){
  if(needed>=120)return null;
  return Math.max(0,Math.ceil(120*needed/(120-needed)));
 }
+

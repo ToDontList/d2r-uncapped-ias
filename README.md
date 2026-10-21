@@ -169,3 +169,15 @@ GitHub Pages에 반영하려면 ZIP 안의 파일을 기존 `index.html`이 있�
 GitHub Pages에 업데이트할 때 `index.html`, `main.js`, **새 파일 `summons.js`**, `style.css`, `README.md`를 기존 `index.html`과 **같은 저장소 최상위**에 업로드해야 합니다. `summons.js`가 빠지면 모듈 로딩 오류로 페이지가 열리지 않습니다.
 
 실행 테스트: `node test_summons_v16.mjs`, 이전 v1.1–v1.5 회귀 테스트.
+
+
+
+## v1.7 — 염소인간·오염된 자 자동 프레임 계산
+
+기존 소환 스킬 선택 UI에 통합했습니다. 염소인간 A1은 FPD 20, 오염된 자 A2 화염구는 FPD 10으로 계산합니다.
+`speed = floor(256 × (100 + EIAS) / 100)`, `FPA = max(1, ceil(FPD × 256 / speed) - 1)`.
+1F 필요 EIAS는 각각 +900 / +400입니다. 속도 상한 600(EIAS +500)에서는 각각 최저 3F / 1F입니다.
+두 소환수의 장비 IAS·WSM 입력은 숨기고 계산에서 제외하며, 표와 CSV는 추가 필요 EIAS를 표시합니다. 기존 스킬·오라 보너스와 공유 설정 기능을 사용합니다. 포식은 활성 상태의 레벨을 입력하고 미사용 시 0을 입력합니다.
+AI 대기 원본 참고값은 염소인간 5F / 오염된 자 15F이며 모션에 단순 합산하지 않습니다. 광분·가르기 시퀀스 및 실제 발사·타격 주기는 게임 내 미검증입니다.
+자료: D2R_Uncapped_IAS_WarlockSummons_v1.7_Addon.zip의 이론 모델. 이전 v1.6 설명 중 두 소환수의 수동 FPA 필수 항목은 이 변경으로 대체됩니다.
+검증: `node test_summons_v17.mjs` 및 `node test_core.mjs`.
