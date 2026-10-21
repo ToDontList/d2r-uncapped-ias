@@ -19,3 +19,14 @@ assert.equal(petFpa({attack:'pet:skeleton'},31),13);
 assert.equal(petFpa({attack:'pet:defiler'},0),null);
 assert.equal(petFpa({attack:'pet:defiler',petBaseFpa:10},0),10);
 console.log('PASS: 28 breakpoint thresholds and preceding EIAS; caps; bonuses; no equipment inheritance; independent AI delay; existing pets.');
+
+for(const id of ['goatman','tainted','skeleton']){
+ const s={attack:'pet:'+id};
+ for(const [lv,expected] of [[0,0],[1,5],[20,24],[200,204]]){
+  assert.equal(petBonuses({...s,petRancor:lv}).total,expected);
+ }
+ assert.equal(petBonuses({...s,rancor:20}).total,0);
+}
+assert.equal(calculatePet({attack:'pet:tainted',petOther:376,petRancor:20,cap:'500'}).fpa,1);
+assert.equal(calculatePet({attack:'pet:tainted',petOther:376,cap:'500'}).fpa,2);
+console.log('PASS summon Rancor levels, no player inheritance, 400 EIAS breakpoint.');

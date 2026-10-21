@@ -1,9 +1,9 @@
 import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlDualWeaponAllowed,OLD_AUTO_WSM} from './data.js';
 import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num,barbarianSwordGrip,getMotion} from './core.js';
-import {SUMMON_ATTACKS,isSummonAttack,petProfile,petFrames,petBonuses,calculatePet,petRequiredItemIAS} from './summons.js?v=1.7';
+import {SUMMON_ATTACKS,isSummonAttack,petProfile,petFrames,petBonuses,calculatePet,petRequiredItemIAS} from './summons.js?v=1.7.1';
 for(const [classId,entries] of Object.entries(SUMMON_ATTACKS)){if(ATTACKS[classId])ATTACKS[classId].push(...entries.map(([id,label])=>[id,label,'summon']));}
 const $=id=>document.getElementById(id);
-const defaults={char:'ama',form:'human',attack:'normal',dual:false,swordGrip:'two',weaponMain:WEAPONS.find(w=>w.name.startsWith('재벌린'))?.id||'w0',weaponOff:WEAPONS.find(w=>w.name.startsWith('시미터'))?.id||'w0',wsmMain:null,wsmOff:null,iasGear:0,iasMain:0,iasOff:0,cap:'none',overrideFrames:0,fan:0,frenzy:0,bos:0,how:0,wolf:0,maul:0,purge:0,rancor:0,lethargy:0,freeze:0,decrepify:0,other:0,slow:0,cleave:0,mirrored:0,chilled:false,petLevel:20,petMastery:0,petEngorge:0,petFan:0,petHow:0,petOther:0,petSlow:0,petItemIAS:0,petWSM:0,petVariant:'normal',petBaseFpa:0,petAiDelay:0};
+const defaults={char:'ama',form:'human',attack:'normal',dual:false,swordGrip:'two',weaponMain:WEAPONS.find(w=>w.name.startsWith('재벌린'))?.id||'w0',weaponOff:WEAPONS.find(w=>w.name.startsWith('시미터'))?.id||'w0',wsmMain:null,wsmOff:null,iasGear:0,iasMain:0,iasOff:0,cap:'none',overrideFrames:0,fan:0,frenzy:0,bos:0,how:0,wolf:0,maul:0,purge:0,rancor:0,lethargy:0,freeze:0,decrepify:0,other:0,slow:0,cleave:0,mirrored:0,chilled:false,petLevel:20,petMastery:0,petEngorge:0,petFan:0,petHow:0,petRancor:0,petOther:0,petSlow:0,petItemIAS:0,petWSM:0,petVariant:'normal',petBaseFpa:0,petAiDelay:0};
 let s={...defaults},activeHand='main',last=null,watchInputs=false;
 const packed=()=>JSON.stringify(s);
 const padSign=n=>n>0?`+${n}`:String(n);
@@ -91,6 +91,7 @@ function renderPet(){
  if(b.levelBonus)bonusParts.push(`소환 레벨 ${Math.max(0,s.petLevel)}: +${b.levelBonus}%`);
  if(b.mastery)bonusParts.push(`악마 숙련: +${b.mastery}%`);
  if(b.engorge)bonusParts.push(`포식: +${b.engorge}%`);
+ if(b.rancor)bonusParts.push(`인장: 울분: +${b.rancor}%`);
  $('petOwnIAS').textContent=bonusParts.length?`소환 스킬 직접 공격속도 · ${bonusParts.join(' / ')}`:'소환 스킬 자체의 직접 공속 증가: +0%';
  $('petSources').textContent=`공격 모션: ${p.fpd?`${p.animation} · 기준 FPD ${p.fpd}, 정수 애니메이션 속도 이론식`:petFrames(s).length?`${p.animation} · 기존 공개 브레이크포인트 사용`:'해당 몬스터의 표준 공속 프레임 미확인'}. ${p.note||''} AI 행동 대기: ${aiActual===null?'몬스터마다 상이':`${aiActual}F${num(s.petAiDelay)>0?' (모드 수동 입력)':' (원본 참조값)'}`}. AI 행동 간격은 공격 모션 프레임과 다르며, AI 간격 단축 모드가 적용돼도 자동으로 타격 수를 산출하지 않습니다.`;
  $('petBuffTotal').textContent=padSign(b.skillTotal);
@@ -112,7 +113,7 @@ function renderPet(){
  $('bpIASHeader').textContent=p.fpd?'추가 필요 EIAS':'필요 소환수 장비 IAS';$('bpRateHeader').textContent='초당 모션(이론)';
  $('frameLabel').title='실제 초당 명중 횟수가 아니라 공격 모션의 길이입니다.';
  const message=[];
- if(p.fpd)message.push(`현재 상한 내 최저 모션: ${result.cap===null?1:calculatePet({...s,petLevel:0,petMastery:0,petEngorge:0,petFan:0,petHow:0,petOther:result.cap,petSlow:0}).fpa}F. 1F 필요 EIAS: +${p.fpd===20?900:400}. 장비 IAS와 WSM은 이 두 소환수의 계산에 적용하지 않습니다.`);
+ if(p.fpd)message.push(`현재 상한 내 최저 모션: ${result.cap===null?1:calculatePet({...s,petLevel:0,petMastery:0,petEngorge:0,petFan:0,petHow:0,petRancor:0,petOther:result.cap,petSlow:0}).fpa}F. 1F 필요 EIAS: +${p.fpd===20?900:400}. 장비 IAS와 WSM은 이 두 소환수의 계산에 적용하지 않습니다.`);
  if(result.fpa===null)message.push('애니메이션 기준 프레임이 없어 결과를 표시하지 않습니다. 해당 몬스터의 실제 EIAS 0 기준 공격 프레임을 입력하면 이론 계산을 사용할 수 있습니다.');
  if(!p.fpd&&result.theoretical&&result.fpa!==null)message.push('현재 프레임은 원본 참조표의 마지막 공속 구간을 넘어서므로 상한 해제를 가정한 이론값입니다. 실제 타격/시전 속도와 다를 수 있습니다.');
  if(result.cap!==null&&b.total>result.cap)message.push(`설정한 총 EIAS 상한 +${result.cap}을 적용했습니다. 원래 EIAS는 ${padSign(b.total)}입니다.`);

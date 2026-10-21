@@ -54,13 +54,14 @@ export function petBonuses(s){
  const engorge=p.owner==='war'&&level(s,'petEngorge')>0?Math.min(15+level(s,'petEngorge')-1,35):0;
  const fan=level(s,'petFan')>0?diminishing(level(s,'petFan'),10,40):0;
  const how=level(s,'petHow')>0?Math.min(5+level(s,'petHow'),30):0;
+ const rancor=level(s,'petRancor')>0?5+level(s,'petRancor')-1:0;
  const slow=-Math.min(99,Math.max(0,num(s.petSlow)));
  const other=num(s.petOther);
  const item=p.fpd?0:effectiveItemIAS(Math.max(0,num(s.petItemIAS)));
  const wsm=p.fpd?0:num(s.petWSM);
- const entries=[['소환 스킬 자체',own],['악마 숙련 / Demonic Mastery',mastery],['포식 / Engorge',engorge],['광신 오라 / Fanaticism',fan],['울버린의 심장 / Heart of Wolverine',how],['감속',slow],['기타 소환수 스킬 공속',other]];
+ const entries=[['소환 스킬 자체',own],['악마 숙련 / Demonic Mastery',mastery],['포식 / Engorge',engorge],['광신 오라 / Fanaticism',fan],['울버린의 심장 / Heart of Wolverine',how],['인장: 울분 / Sigil: Rancor',rancor],['감속',slow],['기타 소환수 스킬 공속',other]];
  const total=entries.reduce((x,e)=>x+e[1],0)+item-wsm;
- return {total,item,wsm,skillTotal:total-item+wsm,levelBonus:own,mastery,engorge,fan,how,entries:entries.filter(e=>e[1]!==0)};
+ return {total,item,wsm,skillTotal:total-item+wsm,levelBonus:own,mastery,engorge,fan,how,rancor,entries:entries.filter(e=>e[1]!==0)};
 }
 const fpaApprox=(baseline,eias)=>{
  // Base measured FPA is used only if user supplies a custom monster cycle.
