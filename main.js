@@ -1,6 +1,6 @@
-import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlDualWeaponAllowed,OLD_AUTO_WSM} from './data.js';
+import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlDualWeaponAllowed,OLD_AUTO_WSM} from './data.js?v=1.7.2';
 import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num,barbarianSwordGrip,getMotion} from './core.js';
-import {SUMMON_ATTACKS,isSummonAttack,petProfile,petFrames,petBonuses,calculatePet,petRequiredItemIAS} from './summons.js?v=1.7.1';
+import {SUMMON_ATTACKS,isSummonAttack,petProfile,petFrames,petBonuses,calculatePet,petRequiredItemIAS} from './summons.js?v=1.7.2';
 for(const [classId,entries] of Object.entries(SUMMON_ATTACKS)){if(ATTACKS[classId])ATTACKS[classId].push(...entries.map(([id,label])=>[id,label,'summon']));}
 const $=id=>document.getElementById(id);
 const defaults={char:'ama',form:'human',attack:'normal',dual:false,swordGrip:'two',weaponMain:WEAPONS.find(w=>w.name.startsWith('재벌린'))?.id||'w0',weaponOff:WEAPONS.find(w=>w.name.startsWith('시미터'))?.id||'w0',wsmMain:null,wsmOff:null,iasGear:0,iasMain:0,iasOff:0,cap:'none',overrideFrames:0,fan:0,frenzy:0,bos:0,how:0,wolf:0,maul:0,purge:0,rancor:0,lethargy:0,freeze:0,decrepify:0,other:0,slow:0,cleave:0,mirrored:0,chilled:false,petLevel:20,petMastery:0,petEngorge:0,petFan:0,petHow:0,petRancor:0,petOther:0,petSlow:0,petItemIAS:0,petWSM:0,petVariant:'normal',petBaseFpa:0,petAiDelay:0};
@@ -35,7 +35,14 @@ function setField(field,value,updateUI=false){s[field]=value;persist();if(update
 function frameText(f){return f===null?'미지원':`${fstr(f)}F`}
 function writePlain(el,text){$(el).textContent=text}
 // Display the calculated active IAS/debuff directly beneath each skill-level input.
+const petBonusKeys={petLevel:'levelBonus',petMastery:'mastery',petEngorge:'engorge',petFan:'fan',petHow:'how',petRancor:'rancor'};
 function setupBuffIndicators(){
+ for(const key of Object.keys(petBonusKeys)){
+  const input=document.querySelector(`[data-pet-field="${key}"]`);
+  const foot=document.createElement('small');foot.className='skill-ias-output';
+  foot.dataset.petBonusFor=key;foot.hidden=true;input.insertAdjacentElement('afterend',foot);
+ }
+
  document.querySelectorAll('.buff-grid input[data-field]').forEach(input=>{
    const foot=document.createElement('small');foot.className='skill-ias-output';
    foot.dataset.bonusFor=input.dataset.field;foot.hidden=true;
@@ -75,6 +82,12 @@ function renderTable(result){const hand=result.dual&&activeHand==='off'?'off':'m
 }
 function renderPet(){
  const result=calculatePet(s),p=result.profile,b=result.bonuses;
+ for(const output of document.querySelectorAll('[data-pet-bonus-for]')){
+  const key=output.dataset.petBonusFor,value=b[petBonusKeys[key]]??0;
+  output.hidden=num(s[key])<=0;
+  output.textContent=`+${value}% SKILL IAS${key==='petLevel'&&value===0?' · 직접 공속 보너스 없음':''}`;
+ }
+
  $('petName').textContent=p.name;
  for(const key of ['petItemIAS','petWSM'])document.querySelector(`[data-pet-field="${key}"]`).closest('label').hidden=!!p.fpd;
  $('petDemonFields').hidden=p.owner!=='war';$('petCustomBox').hidden=!p.custom;
