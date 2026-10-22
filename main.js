@@ -1,9 +1,9 @@
 import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlDualWeaponAllowed,OLD_AUTO_WSM} from './data.js?v=1.7.2';
-import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num,barbarianSwordGrip,getMotion} from './core.js';
+import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num,barbarianSwordGrip,getMotion} from './core.js?v=1.7.3';
 import {SUMMON_ATTACKS,isSummonAttack,petProfile,petFrames,petBonuses,calculatePet,petRequiredItemIAS} from './summons.js?v=1.7.2';
 for(const [classId,entries] of Object.entries(SUMMON_ATTACKS)){if(ATTACKS[classId])ATTACKS[classId].push(...entries.map(([id,label])=>[id,label,'summon']));}
 const $=id=>document.getElementById(id);
-const defaults={char:'ama',form:'human',attack:'normal',dual:false,swordGrip:'two',weaponMain:WEAPONS.find(w=>w.name.startsWith('재벌린'))?.id||'w0',weaponOff:WEAPONS.find(w=>w.name.startsWith('시미터'))?.id||'w0',wsmMain:null,wsmOff:null,iasGear:0,iasMain:0,iasOff:0,cap:'none',overrideFrames:0,fan:0,frenzy:0,bos:0,how:0,wolf:0,maul:0,purge:0,rancor:0,lethargy:0,freeze:0,decrepify:0,other:0,slow:0,cleave:0,mirrored:0,chilled:false,petLevel:20,petMastery:0,petEngorge:0,petFan:0,petHow:0,petRancor:0,petOther:0,petSlow:0,petItemIAS:0,petWSM:0,petVariant:'normal',petBaseFpa:0,petAiDelay:0};
+const defaults={char:'ama',form:'human',attack:'normal',dual:false,swordGrip:'two',weaponMain:WEAPONS.find(w=>w.name.startsWith('재벌린'))?.id||'w0',weaponOff:WEAPONS.find(w=>w.name.startsWith('시미터'))?.id||'w0',wsmMain:null,wsmOff:null,iasGear:0,iasMain:0,iasOff:0,cap:'none',overrideFrames:0,fan:0,frenzy:0,bos:0,how:0,wolf:0,maul:0,purge:0,rancor:0,lethargy:0,freeze:0,decrepify:0,other:0,slow:0,cleave:0,mirrored:0,chilled:false,metamorphosis:false,petLevel:20,petMastery:0,petEngorge:0,petFan:0,petHow:0,petRancor:0,petOther:0,petSlow:0,petItemIAS:0,petWSM:0,petVariant:'normal',petBaseFpa:0,petAiDelay:0};
 let s={...defaults},activeHand='main',last=null,watchInputs=false;
 const packed=()=>JSON.stringify(s);
 const padSign=n=>n>0?`+${n}`:String(n);
@@ -30,7 +30,7 @@ function refreshWeapons(hand){const main=hand==='main';const search=$(main?'sear
 }
 function refreshClass(){const cls=$('class');cls.innerHTML=CLASSES.map(([id,ko,en])=>`<option value="${id}">${ko} · ${en}</option>`).join('');cls.value=s.char;}
 function refreshAttacks(){const select=$('attack');const avail=ATTACKS[s.char]||ATTACKS.ama;if(!avail.some(a=>a[0]===s.attack))s.attack=avail[0][0];select.innerHTML=avail.map(([id,ko])=>`<option value="${id}">${ko}</option>`).join('');select.value=s.attack;}
-function sync(){watchInputs=false;refreshClass();$('form').value=s.form;refreshAttacks();$('dual').checked=!!s.dual;$('swordGrip').value=s.swordGrip==='one'?'one':'two';$('iasGear').value=s.iasGear;$('iasMain').value=s.iasMain;$('iasOff').value=s.iasOff;$('cap').value=s.cap;$('overrideFrames').value=s.overrideFrames;$('chilled').checked=!!s.chilled;document.querySelectorAll('[data-field]').forEach(el=>el.value=s[el.dataset.field]??0);document.querySelectorAll('[data-pet-field]').forEach(el=>el.value=s[el.dataset.petField]??0);refreshWeapons('main');refreshWeapons('off');watchInputs=true;render();}
+function sync(){watchInputs=false;refreshClass();$('form').value=s.form;refreshAttacks();$('dual').checked=!!s.dual;$('swordGrip').value=s.swordGrip==='one'?'one':'two';$('iasGear').value=s.iasGear;$('iasMain').value=s.iasMain;$('iasOff').value=s.iasOff;$('cap').value=s.cap;$('overrideFrames').value=s.overrideFrames;$('chilled').checked=!!s.chilled;$('metamorphosis').checked=s.metamorphosis===true;document.querySelectorAll('[data-field]').forEach(el=>el.value=s[el.dataset.field]??0);document.querySelectorAll('[data-pet-field]').forEach(el=>el.value=s[el.dataset.petField]??0);refreshWeapons('main');refreshWeapons('off');watchInputs=true;render();}
 function setField(field,value,updateUI=false){s[field]=value;persist();if(updateUI)sync();else render();}
 function frameText(f){return f===null?'미지원':`${fstr(f)}F`}
 function writePlain(el,text){$(el).textContent=text}
@@ -50,6 +50,7 @@ function setupBuffIndicators(){
  });
 }
 function renderBuffIndicators(b){
+ $('metamorphosisBonus').hidden=!b.values.metamorphosis;
  for(const output of document.querySelectorAll('[data-bonus-for]')){
    const id=output.dataset.bonusFor,level=Math.max(0,Math.trunc(num(s[id])));
    let value=b.values[id]??0,conditional=false;
@@ -193,7 +194,7 @@ function render(){const petMode=isSummonAttack(s.attack);document.body.classList
 }
 function safeNumber(v,min=-9999,max=100000){return Math.min(max,Math.max(min,num(v)));}
 function updateWeapon(hand,newId){if(!WEAPONS.some(w=>w.id===newId))return;const key=hand==='main'?'weaponMain':'weaponOff',wsm=hand==='main'?'wsmMain':'wsmOff';s[key]=newId;s[wsm]=null;$(hand==='main'?'wsmMain':'wsmOff').value=weaponFor(hand).wsm;persist();render();}
-function setup(){setupBuffIndicators();restore();sync();$('class').addEventListener('change',e=>{s.char=e.target.value;s.attack='normal';s.dual=false;sync();persist()});$('attack').addEventListener('change',e=>{s.attack=e.target.value;s.dual=DUAL_SKILLS.has(s.attack);s.petVariant='normal';s.petBaseFpa=0;$('searchMain').value='';$('searchOff').value='';refreshWeapons('main');refreshWeapons('off');render();persist()});$('form').addEventListener('change',e=>setField('form',e.target.value));$('dual').addEventListener('change',e=>setField('dual',e.target.checked,true));$('swordGrip').addEventListener('change',e=>setField('swordGrip',e.target.value));$('cap').addEventListener('change',e=>setField('cap',e.target.value));$('chilled').addEventListener('change',e=>setField('chilled',e.target.checked));$('petVariant').addEventListener('change',e=>setField('petVariant',e.target.value));
+function setup(){setupBuffIndicators();restore();sync();$('class').addEventListener('change',e=>{s.char=e.target.value;s.attack='normal';s.dual=false;sync();persist()});$('attack').addEventListener('change',e=>{s.attack=e.target.value;s.dual=DUAL_SKILLS.has(s.attack);s.petVariant='normal';s.petBaseFpa=0;$('searchMain').value='';$('searchOff').value='';refreshWeapons('main');refreshWeapons('off');render();persist()});$('form').addEventListener('change',e=>setField('form',e.target.value));$('dual').addEventListener('change',e=>setField('dual',e.target.checked,true));$('swordGrip').addEventListener('change',e=>setField('swordGrip',e.target.value));$('cap').addEventListener('change',e=>setField('cap',e.target.value));$('metamorphosis').addEventListener('change',e=>setField('metamorphosis',e.target.checked));$('chilled').addEventListener('change',e=>setField('chilled',e.target.checked));$('petVariant').addEventListener('change',e=>setField('petVariant',e.target.value));
  for(const el of document.querySelectorAll('[data-pet-field]'))el.addEventListener('input',e=>setField(el.dataset.petField,safeNumber(e.target.value,el.dataset.petField==='petOther'?-3000:el.dataset.petField==='petWSM'?-100:0,el.dataset.petField==='petWSM'?100:100000)));
  for(const id of ['iasGear','iasMain','iasOff','overrideFrames'])$(id).addEventListener('input',e=>setField(id,safeNumber(e.target.value,0)));
  for(const el of document.querySelectorAll('[data-field]'))el.addEventListener('input',e=>setField(el.dataset.field,safeNumber(e.target.value,-1000,3000)));

@@ -30,13 +30,14 @@ export function buffs(s){
   const rancor=level('rancor')?5+level('rancor')-1:0;
   const freeze=level('freeze')?-Math.min(50,diminishing(level('freeze'),25,60)):0;
   const decrepify=level('decrepify')?-50:0;
+  const metamorphosis=s.metamorphosis===true?25:0;
   const chill=s.chilled?-50:0;
   const slow=-clamp(num(s.slow),0,99);
   const own=num(s.other);
   const cleave=s.attack==='cleave'?diminishing(level('cleave'),10,30):0;
   const mirrored=s.attack==='mirrored'?diminishing(level('mirrored'),10,30):0;
-  const entries=[['광신',fan],['광분 (최대 중첩)',frenzy],['폭발적인 속도',bos],['늑대인간',wolf],['후려치기',maul],['울버린의 심장 (직접 투자)',how],['주술: 처단',purge],['인장: 무기력',lethargy],['인장: 울분',rancor],['신성한 빙결',freeze],['노화',decrepify],['냉기',chill],['기타 감속',slow],['기타 스킬 공속',own],['가르기',cleave],['거울 칼날',mirrored]];
-  return {total:entries.reduce((x,[_k,v])=>x+v,0),entries:entries.filter(([_k,v])=>v!==0),values:{fan,frenzy,bos,wolf,maul,how,purge,rancor,lethargy,freeze,decrepify,other:own,slow,cleave,mirrored},how,fan,frenzy,bos};
+  const entries=[['탈태',metamorphosis],['광신',fan],['광분 (최대 중첩)',frenzy],['폭발적인 속도',bos],['늑대인간',wolf],['후려치기',maul],['울버린의 심장 (직접 투자)',how],['주술: 처단',purge],['인장: 무기력',lethargy],['인장: 울분',rancor],['신성한 빙결',freeze],['노화',decrepify],['냉기',chill],['기타 감속',slow],['기타 스킬 공속',own],['가르기',cleave],['거울 칼날',mirrored]];
+  return {total:entries.reduce((x,[_k,v])=>x+v,0),entries:entries.filter(([_k,v])=>v!==0),values:{metamorphosis,fan,frenzy,bos,wolf,maul,how,purge,rancor,lethargy,freeze,decrepify,other:own,slow,cleave,mirrored},how,fan,frenzy,bos};
 }
 export function dualEnabled(s){
   return DUAL_SKILLS.has(s.attack)||(!!s.dual&&(
@@ -167,3 +168,4 @@ export function accuracyTag(attack,form){
   if(ACCURACY.estimated.has(attack))return ['근사 계산','복합 스킬 시퀀스/롤백의 실제 판정 프레임과 다를 수 있음','approx'];
   return ['기본 모션 계산','클래스별 일반 모션을 기반으로 계산. 리이매진드 애니메이션 플러그인 사용 시 차이 가능','base'];
 }
+
