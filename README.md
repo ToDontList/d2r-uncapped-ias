@@ -216,3 +216,16 @@ PC와 모바일 모두 증가 옵션을 위쪽, 감소 옵션(무기력·신성�
 - https://github.com/ChthonVII/d2r_24ptr2_wereform_calculator (math.js / datatables.js)
 - https://github.com/Warren1001/IAS_Calculator (calculator.js / constants.js; Warlock 포함 직업별 모션)
 - https://github.com/D2R-Reimagined/d2r-reimagined-mod/blob/main/data/global/excel/skills.txt (A1/S3 및 Fury Param2=70, Param5=2, Param6=5)
+
+
+## v1.8.1 — 가르기·거울상 칼날 수정
+
+두 스킬을 미지원 목록에서 제거하고 전용 SQ 시퀀스를 구현했습니다. 일반 공격의 -1 프레임 생략을 적용하지 않습니다. 레벨 보너스는 Reimagined skills.txt의 dm34(Param3=10, Param4=30)를 사용하며 별도 시퀀스 속도 보정 -30을 세부 내역에 표시합니다. 레벨 1/5/10/20/40의 추가 공속은 각각 +13/+20/+23/+26/+29입니다. 정수·점감 계산 때문에 모든 레벨에서 수치가 변하지는 않습니다.
+
+가르기: 1HS/1HT=16, 2HS=18, 2HT=20, STF=22.
+거울상 칼날: 1HS/1HT=16, 2HS=19, 2HT=21, STF=17, 활/쇠뇌=18.
+출처: Warren1001/IAS_Calculator의 getSequence, calculateSIAS; D2R-Reimagined/d2r-reimagined-mod data/global/excel/skills.txt의 Cleave/Mirrored Blades 행(2026-10-24 확인).
+
+보너스는 해당 공격을 선택했을 때만 합산합니다. 다른 공격 선택 중에는 입력 아래에 예상 보너스와 적용 조건을 표시합니다. 지원하지 않는 무기는 선택 목록에서 제외합니다. 결과·표·CSV의 속도는 스킬 사용 횟수이며 복제 칼날의 명중 횟수는 계산하지 않습니다. 공속 상한 해제 구간은 이론 외삽이며 게임 실측 미검증입니다.
+
+검증: 레벨 보너스, 12개 무기별 시퀀스, -30 보정, 1F까지의 전환 경계, 장비 IAS 역산 및 상한·다른 스킬 비상속을 테스트했습니다.

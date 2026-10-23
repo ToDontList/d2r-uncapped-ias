@@ -2,6 +2,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node test_core.mjs && node test_summons_v17.mjs && node test_wereforms.mjs"
+    "test": "node test_core.mjs && node test_summons_v17.mjs && node test_wereforms.mjs && node test_warlock_sequences.mjs"
   }
 }

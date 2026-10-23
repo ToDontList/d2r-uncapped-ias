@@ -35,12 +35,13 @@ export const ATTACKS={
   bar:[['normal','일반 공격','normal'],['frenzy','광분 / Frenzy','frenzy'],['double','이중 타격 / Double Swing','frenzy'],['dthrow','이중 투척 / Double Throw','frenzy'],['whirl','훨윈드 / Whirlwind','whirl'],['bash','강격 / Bash','normal'],['stun','기절 / Stun','normal'],['concentrate','집중 / Concentrate','normal'],['berserk','광폭화 / Berserk','normal']],
   dru:[['normal','일반 공격','normal'],['fury','분노 / Fury','rollback'],['feral','야성의 분노 / Feral Rage','normal'],['fireclaws','화염 발톱 / Fire Claws','normal'],['rabies','광견병 / Rabies','normal'],['hunger','굶주림 / Hunger','normal'],['maul','후려치기 / Maul','normal']],
   ass:[['normal','일반 공격','normal'],['dragonclaw','용의 손톱 / Dragon Claw','frenzy'],['dragontalon','용의 발톱 / Dragon Talon','rollback'],['tiger','호랑이 일격 / Tiger Strike','normal'],['cobra','코브라 일격 / Cobra Strike','normal'],['phoenix','불사조 일격 / Phoenix Strike','normal'],['fists','화염의 주먹 / Fists of Fire','frenzy'],['thunder','천둥의 손톱 / Claws of Thunder','frenzy'],['ice','얼음의 칼날 / Blades of Ice','frenzy'],['traps','덫 설치 / Laying Traps','special']],
-  war:[['normal','일반 공격','normal'],['cleave','가르기 / Cleave','special'],['mirrored','거울 칼날 / Mirrored Blades','special']]
+  war:[['normal','일반 공격','normal'],['cleave','가르기 / Cleave','special'],['mirrored','거울상 칼날 / Mirrored Blades','special']]
 };
 export const DUAL_SKILLS=new Set(['frenzy','double','dthrow','dragonclaw']);
 // Whirlwind: optional dual wield, unlike forced two-weapon Frenzy.
 // Includes two-handed swords that the Barbarian can equip one per hand.
 export const WHIRL_DUAL_TYPES=new Set(['oneSwing','oneThrust','twoSword','throwing']);
 export const whirlDualWeaponAllowed=weapon=>WHIRL_DUAL_TYPES.has(weapon.type);
-export const CONSTRAINED_SKILLS=new Set(['impale','charge','cleave','mirrored','traps']);
+export const CONSTRAINED_SKILLS=new Set(['impale','charge','traps']);
+
 
