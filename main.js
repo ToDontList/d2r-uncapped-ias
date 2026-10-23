@@ -1,15 +1,16 @@
-import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlDualWeaponAllowed,OLD_AUTO_WSM} from './data.js?v=1.7.2';
-import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num,barbarianSwordGrip,getMotion} from './core.js?v=1.7.3';
+import {isWereform,wereAttacks,SHAPE_SKILLS} from './wereforms.js?v=1.8.0';
+import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlDualWeaponAllowed,OLD_AUTO_WSM} from './data.js?v=1.8.0';
+import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num,barbarianSwordGrip,getMotion} from './core.js?v=1.8.0';
 import {SUMMON_ATTACKS,isSummonAttack,petProfile,petFrames,petBonuses,calculatePet,petRequiredItemIAS} from './summons.js?v=1.7.2';
 for(const [classId,entries] of Object.entries(SUMMON_ATTACKS)){if(ATTACKS[classId])ATTACKS[classId].push(...entries.map(([id,label])=>[id,label,'summon']));}
 const $=id=>document.getElementById(id);
-const defaults={char:'ama',form:'human',attack:'normal',dual:false,swordGrip:'two',weaponMain:WEAPONS.find(w=>w.name.startsWith('재벌린'))?.id||'w0',weaponOff:WEAPONS.find(w=>w.name.startsWith('시미터'))?.id||'w0',wsmMain:null,wsmOff:null,iasGear:0,iasMain:0,iasOff:0,cap:'none',overrideFrames:0,fan:0,frenzy:0,bos:0,how:0,wolf:0,maul:0,purge:0,rancor:0,lethargy:0,freeze:0,decrepify:0,other:0,slow:0,cleave:0,mirrored:0,chilled:false,metamorphosis:false,petLevel:20,petMastery:0,petEngorge:0,petFan:0,petHow:0,petRancor:0,petOther:0,petSlow:0,petItemIAS:0,petWSM:0,petVariant:'normal',petBaseFpa:0,petAiDelay:0};
+const defaults={char:'ama',form:'human',attack:'normal',furyLevel:4,dual:false,swordGrip:'two',weaponMain:WEAPONS.find(w=>w.name.startsWith('재벌린'))?.id||'w0',weaponOff:WEAPONS.find(w=>w.name.startsWith('시미터'))?.id||'w0',wsmMain:null,wsmOff:null,iasGear:0,iasMain:0,iasOff:0,cap:'none',overrideFrames:0,fan:0,frenzy:0,bos:0,how:0,wolf:0,maul:0,purge:0,rancor:0,lethargy:0,freeze:0,decrepify:0,other:0,slow:0,cleave:0,mirrored:0,chilled:false,metamorphosis:false,petLevel:20,petMastery:0,petEngorge:0,petFan:0,petHow:0,petRancor:0,petOther:0,petSlow:0,petItemIAS:0,petWSM:0,petVariant:'normal',petBaseFpa:0,petAiDelay:0};
 let s={...defaults},activeHand='main',last=null,watchInputs=false;
 const packed=()=>JSON.stringify(s);
 const padSign=n=>n>0?`+${n}`:String(n);
 const fstr=n=>n===null?'—':Number.isInteger(n)?String(n):n.toFixed(1);
 function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>$('toast').classList.remove('show'),2400)}
-function restore(){let fromUrl=null;try{fromUrl=new URL(location.href).searchParams.get('s');if(fromUrl)fromUrl=JSON.parse(decodeURIComponent(escape(atob(fromUrl))));}catch(e){fromUrl=null}let stored=null;try{stored=JSON.parse(localStorage.getItem('ias_reimagined_v1')||'null')}catch(e){}s={...defaults,...(fromUrl||stored||{})};if(!CLASSES.some(c=>c[0]===s.char))s.char='ama';if(!WEAPONS.some(w=>w.id===s.weaponMain))s.weaponMain=defaults.weaponMain;if(!WEAPONS.some(w=>w.id===s.weaponOff))s.weaponOff=defaults.weaponOff;
+function restore(){let fromUrl=null;try{fromUrl=new URL(location.href).searchParams.get('s');if(fromUrl)fromUrl=JSON.parse(decodeURIComponent(escape(atob(fromUrl))));}catch(e){fromUrl=null}let stored=null;try{stored=JSON.parse(localStorage.getItem('ias_reimagined_v1')||'null')}catch(e){}s={...defaults,...(fromUrl||stored||{})};if(!['human','wolf','bear'].includes(s.form))s.form='human';if(s.form==='human'&&SHAPE_SKILLS.has(s.attack))s.form=s.attack==='maul'?'bear':'wolf';if(!CLASSES.some(c=>c[0]===s.char))s.char='ama';if(!WEAPONS.some(w=>w.id===s.weaponMain))s.weaponMain=defaults.weaponMain;if(!WEAPONS.some(w=>w.id===s.weaponOff))s.weaponOff=defaults.weaponOff;
  // v1.5 data migration: a previous default WSM saved as a number is not an intentional
  // manual override. Reset it if the canonical base changed; preserve all other overrides.
  for(const hand of ['Main','Off']){
@@ -29,8 +30,8 @@ function refreshWeapons(hand){const main=hand==='main';const search=$(main?'sear
  $(main?'wsmMain':'wsmOff').value=weaponFor(hand).wsm;
 }
 function refreshClass(){const cls=$('class');cls.innerHTML=CLASSES.map(([id,ko,en])=>`<option value="${id}">${ko} · ${en}</option>`).join('');cls.value=s.char;}
-function refreshAttacks(){const select=$('attack');const avail=ATTACKS[s.char]||ATTACKS.ama;if(!avail.some(a=>a[0]===s.attack))s.attack=avail[0][0];select.innerHTML=avail.map(([id,ko])=>`<option value="${id}">${ko}</option>`).join('');select.value=s.attack;}
-function sync(){watchInputs=false;refreshClass();$('form').value=s.form;refreshAttacks();$('dual').checked=!!s.dual;$('swordGrip').value=s.swordGrip==='one'?'one':'two';$('iasGear').value=s.iasGear;$('iasMain').value=s.iasMain;$('iasOff').value=s.iasOff;$('cap').value=s.cap;$('overrideFrames').value=s.overrideFrames;$('chilled').checked=!!s.chilled;$('metamorphosis').checked=s.metamorphosis===true;document.querySelectorAll('[data-field]').forEach(el=>el.value=s[el.dataset.field]??0);document.querySelectorAll('[data-pet-field]').forEach(el=>el.value=s[el.dataset.petField]??0);refreshWeapons('main');refreshWeapons('off');watchInputs=true;render();}
+function refreshAttacks(){const select=$('attack');const base=ATTACKS[s.char]||ATTACKS.ama;const avail=isWereform(s.form)?[...wereAttacks(s.form),...base.filter(a=>isSummonAttack(a[0]))]:base.filter(a=>!SHAPE_SKILLS.has(a[0]));if(!avail.some(a=>a[0]===s.attack))s.attack=avail[0][0];select.innerHTML=avail.map(([id,ko])=>`<option value="${id}">${ko}</option>`).join('');select.value=s.attack;}
+function sync(){watchInputs=false;refreshClass();$('form').value=s.form;refreshAttacks();$('furyLevel').value=s.furyLevel;$('dual').checked=!!s.dual;$('swordGrip').value=s.swordGrip==='one'?'one':'two';$('iasGear').value=s.iasGear;$('iasMain').value=s.iasMain;$('iasOff').value=s.iasOff;$('cap').value=s.cap;$('overrideFrames').value=s.overrideFrames;$('chilled').checked=!!s.chilled;$('metamorphosis').checked=s.metamorphosis===true;document.querySelectorAll('[data-field]').forEach(el=>el.value=s[el.dataset.field]??0);document.querySelectorAll('[data-pet-field]').forEach(el=>el.value=s[el.dataset.petField]??0);refreshWeapons('main');refreshWeapons('off');watchInputs=true;render();}
 function setField(field,value,updateUI=false){s[field]=value;persist();if(updateUI)sync();else render();}
 function frameText(f){return f===null?'미지원':`${fstr(f)}F`}
 function writePlain(el,text){$(el).textContent=text}
@@ -76,7 +77,7 @@ function renderTable(result){const hand=result.dual&&activeHand==='off'?'off':'m
  if(rows.length===0){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=5;td.textContent='이 스킬은 정확한 애니메이션 시퀀스 자료가 없어 프레임표를 제공하지 않습니다.';tr.appendChild(td);trbody.appendChild(tr);return}
  for(const bp of rows){const tr=document.createElement('tr');const capExceeded=result.cap!==null&&bp.eias>result.cap;const isCurrent=current===bp;
  if(capExceeded)tr.classList.add('cap-row');if(isCurrent)tr.classList.add('current-row');if(isCurrent)tr.id='tableCurrent';
- const eq=requiredEquipmentIAS(s,primary,result.dual?weaponFor('off'):null,hand,bp.eias);const cells=[`${fstr(bp.fpa)}F`,padSign(bp.eias),eq===null?'스킬 공속 필요':`${eq.toLocaleString('ko-KR')}%`,bp.aps.toFixed(2),isCurrent?'● 현재':capExceeded?'상한 초과':bp.eias<effective?'달성':'미달'];
+ const eq=requiredEquipmentIAS(s,primary,result.dual?weaponFor('off'):null,hand,bp.eias);const cells=[bp.sequence&&s.attack==='fury'?`${bp.sequence}F (평균 ${fstr(bp.fpa)}F)`:`${fstr(bp.fpa)}F`,padSign(bp.eias),eq===null?'스킬 공속 필요':`${eq.toLocaleString('ko-KR')}%`,bp.aps.toFixed(2),isCurrent?'● 현재':capExceeded?'상한 초과':bp.eias<effective?'달성':'미달'];
  for(let i=0;i<cells.length;i++){const td=document.createElement('td');td.textContent=cells[i];if(i===4){const span=document.createElement('span');span.className='table-label';span.textContent=cells[i];td.textContent='';td.appendChild(span)}tr.appendChild(td)}trbody.appendChild(tr);
  }
  // Preserve manual scrolling after future input edits; button tabs scroll current in view.
@@ -145,9 +146,9 @@ function renderPet(){
    table.appendChild(tr);
  }
 }
-function render(){const petMode=isSummonAttack(s.attack);document.body.classList.toggle('pet-mode',petMode);$('petConfig').hidden=!petMode;if(petMode){renderPet();return;}$('bpIASHeader').textContent='필요 장비 IAS';$('bpRateHeader').textContent='초당 타격';const main=weaponFor('main'),off=weaponFor('off');const required=DUAL_SKILLS.has(s.attack);
+function render(){const petMode=isSummonAttack(s.attack);document.body.classList.toggle('pet-mode',petMode);$('petConfig').hidden=!petMode;$('furyLevelField').hidden=petMode||s.form!=='wolf'||s.attack!=='fury';$('wereHelp').hidden=petMode;if(petMode){renderPet();return;}$('bpIASHeader').textContent='필요 장비 IAS';$('bpRateHeader').textContent='초당 타격';const main=weaponFor('main'),off=weaponFor('off');const required=DUAL_SKILLS.has(s.attack);
  const whirlOptional=s.char==='bar'&&s.attack==='whirl';
- const dualAvailable=(['bar','ass'].includes(s.char)&&s.attack==='normal')||whirlOptional;
+ const dualAvailable=!isWereform(s.form)&&((['bar','ass'].includes(s.char)&&s.attack==='normal')||whirlOptional);
  const dual=required||(dualAvailable&&s.dual);
  $('dual').disabled=required||!dualAvailable;$('dual').checked=required||s.dual&&dualAvailable;$('dualNotice').textContent=required?'이 스킬은 쌍수 필수':whirlOptional?'훨윈드는 한손/쌍수 모두 가능':dualAvailable?'일반 공격에서 쌍수를 사용한다면 켜세요':'';
  $('offHandHelper').textContent=whirlOptional?'훨윈드는 두 무기의 속도를 각각 계산하고, 쌍수 판정 간격은 평균 후 올림한 추정값으로 표시합니다.':'쌍수 스킬은 양손 IAS를 각각 반영합니다.';
@@ -157,8 +158,8 @@ function render(){const petMode=isSummonAttack(s.attack);document.body.classList
  // A two-handed sword can be equipped by a Barbarian with one hand (shield)
  // even when the dual-weapon checkbox is OFF. The selector applies to normal
  // one-hit attacks; Frenzy/Double Swing and Whirlwind keep their own rules.
- const swordGripChoice=s.char==='bar'&&s.form==='human'&&main.type==='twoSword'&&!dual
-   &&['normal','bash','stun','concentrate','berserk'].includes(s.attack);
+ const swordGripChoice=s.char==='bar'&&main.type==='twoSword'&&!dual
+   &&(isWereform(s.form)||['normal','bash','stun','concentrate','berserk'].includes(s.attack));
  $('swordGripBox').hidden=!swordGripChoice;
  $('swordGrip').value=s.swordGrip==='one'?'one':'two';
  $('swordGripNote').textContent=num(s.overrideFrames)>0
@@ -166,7 +167,7 @@ function render(){const petMode=isSummonAttack(s.attack);document.body.classList
    :'같은 양손검 WSM을 유지하고 공격 모션만 1HS(16) / 2HS(18)로 바꿉니다.';
  const result=calculate(s,main,dual?off:null);last=result;const [label,detail,kind]=accuracyTag(s.attack,s.form);
  $('accuracy').textContent=label;$('accuracy').className='status'+(kind==='unavailable'?' warn':kind==='approx'?' dim':'');$('accuracyDetail').textContent=`${label}: ${detail}`;
- $('frameLabel').textContent=result.whirlDual?'쌍수 훨윈드 예상 판정 간격':'평균 공격 프레임';
+ $('frameLabel').textContent=result.were&&s.attack==='fury'?'분노 연타 평균 프레임':result.whirlDual?'쌍수 훨윈드 예상 판정 간격':'평균 공격 프레임';
  writePlain('currentFrame',fstr(result.avg));
  writePlain('aps',result.whirlDual?'두 무기별 추정 프레임을 평균 후 올림 · 타격 횟수 미검증':result.hitRate===null?'정확한 프레임 계산 불가':`초당 약 ${result.hitRate.toFixed(2)}타 · 25FPS 기준`);
  writePlain('totalEias',result.dual?`${padSign(result.mainE.raw)} / ${padSign(result.offE.raw)}`:padSign(result.mainE.raw));
@@ -174,14 +175,16 @@ function render(){const petMode=isSummonAttack(s.attack);document.body.classList
  writePlain('nextBP',next?`${fstr(next.fpa)}F · ${padSign(next.eias)} EIAS`:'최고 구간');
  $('handResults').hidden=!result.dual;if(result.dual){writePlain('mainFrame',frameText(result.mainF));writePlain('offFrame',frameText(result.offF));writePlain('mainEias',`총 EIAS ${padSign(result.mainE.raw)}`);writePlain('offEias',`총 EIAS ${padSign(result.offE.raw)}`)}
  const messages=[];
+ if(result.were){const w=result.were;messages.push(`${s.form==='wolf'?'늑대인간':'곰인간'} ${s.attack==='fury'?'분노 연타':w.bite?'물기 (S3)':'휘두르기 (A1)'}: 인간형 기본 ${w.humanFrames} FPD, 변신 모션 ${w.length} FPD.${s.attack==='fury'?` ${w.hits}연타: ${w.parts.join(' / ')}F · 한 사이클 ${w.cycle}F · 평균 ${fstr(w.fpa)}F.`:''} 주무기를 기준으로 계산합니다. 1F 표시는 이론상 최소 구간이며 실제 명중 횟수를 보증하지 않습니다.`);}
+
  if(result.cap!==null&&result.mainE.raw>result.cap)messages.push(`선택한 패치의 EIAS 상한 +${result.cap}에 도달했습니다. 주무기는 원래 EIAS ${padSign(result.mainE.raw)}지만 계산에는 +${result.cap}만 적용했어요.`);
  if(result.dual&&result.cap!==null&&result.offE.raw>result.cap)messages.push('보조무기에도 같은 상한을 적용했어요.');
  if(result.cap===null)messages.push('현재 “상한 없음”은 이론 시뮬레이션입니다. 실제 사용 중인 패치가 600이라면 상한 +500 옵션을 선택해야 합니다.');
  if(kind==='approx'||kind==='theory')messages.push('표시된 프레임은 특수 시퀀스의 이론값 또는 근사값이며 실제 판정 검증 전입니다.');
  if(kind==='unavailable')messages.push('임의로 프레임을 추정하지 않고 계산을 보류했습니다.');
  if(swordGripChoice){
-   const mode=barbarianSwordGrip(s,main);
-   messages.push(`바바리안 양손검 ${mode==='one'?'한손(1HS)':'양손(2HS)'} 사용: 기본 ${getMotion({...s,overrideFrames:0},main)} FPD를 적용했습니다. 무기 WSM 및 IAS는 그대로입니다.${num(s.overrideFrames)>0?' 단, 현재 수동 FPD가 우선 적용됩니다.':''}`);
+   const mode=isWereform(s.form)?s.swordGrip:barbarianSwordGrip(s,main);
+   messages.push(`바바리안 양손검 ${mode==='one'?'한손(1HS)':'양손(2HS)'} 사용: 기본 ${getMotion({...s,form:'human',dual:false,overrideFrames:0},main)} FPD를 적용했습니다. 무기 WSM 및 IAS는 그대로입니다.${num(s.overrideFrames)>0?' 단, 현재 수동 FPD가 우선 적용됩니다.':''}`);
  }
  if(s.char==='bar'&&dual&&s.form==='human'&&(main.type==='twoSword'||off.type==='twoSword')&&s.attack!=='whirl'){
    messages.push('바바리안이 양손검을 쌍수로 장착하면 기본 공격 모션은 자동으로 1HS(16 FPD)를 사용합니다. 광분의 공격 간격은 기존 별도 시퀀스 이론표로 계산합니다.');
@@ -194,7 +197,7 @@ function render(){const petMode=isSummonAttack(s.attack);document.body.classList
 }
 function safeNumber(v,min=-9999,max=100000){return Math.min(max,Math.max(min,num(v)));}
 function updateWeapon(hand,newId){if(!WEAPONS.some(w=>w.id===newId))return;const key=hand==='main'?'weaponMain':'weaponOff',wsm=hand==='main'?'wsmMain':'wsmOff';s[key]=newId;s[wsm]=null;$(hand==='main'?'wsmMain':'wsmOff').value=weaponFor(hand).wsm;persist();render();}
-function setup(){setupBuffIndicators();restore();sync();$('class').addEventListener('change',e=>{s.char=e.target.value;s.attack='normal';s.dual=false;sync();persist()});$('attack').addEventListener('change',e=>{s.attack=e.target.value;s.dual=DUAL_SKILLS.has(s.attack);s.petVariant='normal';s.petBaseFpa=0;$('searchMain').value='';$('searchOff').value='';refreshWeapons('main');refreshWeapons('off');render();persist()});$('form').addEventListener('change',e=>setField('form',e.target.value));$('dual').addEventListener('change',e=>setField('dual',e.target.checked,true));$('swordGrip').addEventListener('change',e=>setField('swordGrip',e.target.value));$('cap').addEventListener('change',e=>setField('cap',e.target.value));$('metamorphosis').addEventListener('change',e=>setField('metamorphosis',e.target.checked));$('chilled').addEventListener('change',e=>setField('chilled',e.target.checked));$('petVariant').addEventListener('change',e=>setField('petVariant',e.target.value));
+function setup(){setupBuffIndicators();restore();sync();$('class').addEventListener('change',e=>{s.char=e.target.value;s.attack='normal';s.dual=false;sync();persist()});$('attack').addEventListener('change',e=>{s.attack=e.target.value;s.dual=DUAL_SKILLS.has(s.attack);s.petVariant='normal';s.petBaseFpa=0;$('searchMain').value='';$('searchOff').value='';refreshWeapons('main');refreshWeapons('off');render();persist()});$('form').addEventListener('change',e=>{s.form=e.target.value;s.dual=false;sync();persist()});$('furyLevel').addEventListener('input',e=>setField('furyLevel',Math.trunc(safeNumber(e.target.value,1,200))));$('dual').addEventListener('change',e=>setField('dual',e.target.checked,true));$('swordGrip').addEventListener('change',e=>setField('swordGrip',e.target.value));$('cap').addEventListener('change',e=>setField('cap',e.target.value));$('metamorphosis').addEventListener('change',e=>setField('metamorphosis',e.target.checked));$('chilled').addEventListener('change',e=>setField('chilled',e.target.checked));$('petVariant').addEventListener('change',e=>setField('petVariant',e.target.value));
  for(const el of document.querySelectorAll('[data-pet-field]'))el.addEventListener('input',e=>setField(el.dataset.petField,safeNumber(e.target.value,el.dataset.petField==='petOther'?-3000:el.dataset.petField==='petWSM'?-100:0,el.dataset.petField==='petWSM'?100:100000)));
  for(const id of ['iasGear','iasMain','iasOff','overrideFrames'])$(id).addEventListener('input',e=>setField(id,safeNumber(e.target.value,0)));
  for(const el of document.querySelectorAll('[data-field]'))el.addEventListener('input',e=>setField(el.dataset.field,safeNumber(e.target.value,-1000,3000)));
@@ -210,10 +213,11 @@ function setup(){setupBuffIndicators();restore();sync();$('class').addEventListe
  $('jumpCurrent').addEventListener('click',()=>{const row=$('tableCurrent');if(row){row.scrollIntoView({block:'center',behavior:'smooth'});toast('현재 EIAS 구간을 표시했어요')}else toast('현재 구간을 표시할 수 없습니다')});
  $('exportCSV').addEventListener('click',()=>{
   if(isSummonAttack(s.attack)){const result=calculatePet(s),csv=[`프레임,필요_총_EIAS,${result.profile.fpd?'추가_필요_EIAS':'필요_소환수_장비_IAS_퍼센트'},초당_애니메이션_이론,검증_상태`];for(const bp of result.rows){const req=result.profile.fpd?Math.max(0,bp.eias-result.bonuses.total):petRequiredItemIAS(s,bp.eias);csv.push(`${bp.fpa},${bp.eias},${req===null?'스킬공속필요':req},${bp.aps.toFixed(3)},${result.profile.fpd?'A1/A2이론계산':bp.extrapolated?'이론외삽':'기존참조표'}`)}const blob=new Blob(['\ufeff'+csv.join('\r\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='D2R_Reimagined_Summon_IAS_breakpoints.csv';document.body.appendChild(a);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);a.remove();toast('소환수 공속표 CSV 저장');return;}
-  const weaponMain=weaponFor('main'),weaponOff=weaponFor('off');const hands=last?.dual?['main','off']:['main'];const csv=[['손','프레임','필요 총 EIAS','필요 장비 IAS(%)','초당 공격 횟수','상한 초과'].join(',')];
-  for(const hand of hands){const w=hand==='main'?weaponMain:weaponOff;for(const bp of getBreakpoints(s,w)){const req=requiredEquipmentIAS(s,weaponMain,last?.dual?weaponOff:null,hand,bp.eias);csv.push([hand==='main'?'주무기':'보조무기',bp.fpa,bp.eias,req??'스킬 공속 필요',bp.aps.toFixed(3),last?.cap!==null&&bp.eias>last.cap?'Y':'N'].join(','))}}
+  const weaponMain=weaponFor('main'),weaponOff=weaponFor('off');const hands=last?.dual?['main','off']:['main'];const csv=[['손','프레임','필요 총 EIAS','필요 장비 IAS(%)','초당 공격 횟수','상한 초과','변신 연타 구간(F)','사이클(F)'].join(',')];
+  for(const hand of hands){const w=hand==='main'?weaponMain:weaponOff;for(const bp of getBreakpoints(s,w)){const req=requiredEquipmentIAS(s,weaponMain,last?.dual?weaponOff:null,hand,bp.eias);csv.push([hand==='main'?'주무기':'보조무기',bp.fpa,bp.eias,req??'스킬 공속 필요',bp.aps.toFixed(3),last?.cap!==null&&bp.eias>last.cap?'Y':'N',bp.sequence??'',bp.cycle??''].join(','))}}
   const blob=new Blob(['\ufeff'+csv.join('\r\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='D2R_Reimagined_IAS_breakpoints.csv';document.body.appendChild(a);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);a.remove();toast('프레임표 CSV를 저장했어요')
  });
 }
 setup();
+
 

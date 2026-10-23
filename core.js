@@ -1,4 +1,5 @@
-import {MOTION,DUAL_SKILLS,CONSTRAINED_SKILLS} from './data.js';
+import {isWereform,wereTiming,SHAPE_SKILLS} from './wereforms.js?v=1.8.0';
+import {MOTION,DUAL_SKILLS,CONSTRAINED_SKILLS} from './data.js?v=1.8.0';
 
 export const FRENZY_BPS=[
  [-85,100],[0,12.5],[2,12],[5,11.5],[8,11],[12,10.5],[16,10],[20,9.5],[25,9],
@@ -40,6 +41,7 @@ export function buffs(s){
   return {total:entries.reduce((x,[_k,v])=>x+v,0),entries:entries.filter(([_k,v])=>v!==0),values:{metamorphosis,fan,frenzy,bos,wolf,maul,how,purge,rancor,lethargy,freeze,decrepify,other:own,slow,cleave,mirrored},how,fan,frenzy,bos};
 }
 export function dualEnabled(s){
+  if(isWereform(s.form))return false;
   return DUAL_SKILLS.has(s.attack)||(!!s.dual&&(
     (s.attack==='normal'&&['bar','ass'].includes(s.char))||
     (s.attack==='whirl'&&s.char==='bar')
@@ -66,19 +68,18 @@ export function getMotion(s,weapon){
 function singleFPS(fpd,eias,form,skill){
   const accel=Math.max(1,Math.floor(256*(100+eias)/100));
   let frames=fpd;
-  if(form==='wolf') frames=Math.ceil(fpd*0.9); // approximate; wereforms use distinct timing tables
-  if(form==='bear') frames=Math.ceil(fpd*1.1);
   let f=Math.ceil(frames*256/accel)-1;
   if(skill==='throw')f+=1;
   if(skill==='jab')f=Math.ceil(f*0.82);
   if(skill==='strafe')f=Math.ceil(f*0.65);
   if(skill==='zeal')f=Math.ceil(f*0.75);
-  if(skill==='fury')f=Math.ceil(f*0.7);
   if(skill==='fend')f=Math.ceil(f*0.7);
   if(skill==='dragontalon')f=Math.ceil(f*0.66);
   return Math.max(1,f);
 }
 export function frameFromEias(s,weapon,eias){
+  if(isWereform(s.form))return wereTiming(s,weapon,eias)?.fpa??null;
+  if(SHAPE_SKILLS.has(s.attack))return null;
   if(CONSTRAINED_SKILLS.has(s.attack))return null;
   // Frenzy 17-frame two-hit sequence, 70 base animation rate: preserved theoretical table.
   if(s.attack==='frenzy'){
@@ -120,17 +121,20 @@ export function calculate(s,main,off){
   const avg=mainF===null||dual&&offF===null?null
     :whirlDual?Math.ceil((mainF+offF)/2)
     :dual?(mainF+offF)/2:mainF;
-  return {cap,dual,whirlDual,mainE,offE,mainF,offF,avg,
+  return {were:isWereform(s.form)?wereTiming(s,main,mainShown):null,cap,dual,whirlDual,mainE,offE,mainF,offF,avg,
     hitRate:whirlDual?null:avg?25/avg:null,
     mainUncapped:frameFromEias(s,main,mainE.raw),offUncapped:dual?frameFromEias(s,off,offE.raw):null};
 }
 // Every transition in theoretical total EIAS from -85..1300, including 1F.
 export function getBreakpoints(s,weapon,{start=-85,end=3000}={}){
   if(CONSTRAINED_SKILLS.has(s.attack))return [];
-  const rows=[];let prev=Infinity;
+  const rows=[];let prev=Infinity,prevSequence=null;
   for(let e=start;e<=end;e++){
     const f=frameFromEias(s,weapon,e);
-    if(f!==prev){rows.push({eias:e,fpa:f,aps:25/f});prev=f;}
+    if(f===null)return [];
+    const timing=isWereform(s.form)?wereTiming(s,weapon,e):null;
+    const sequence=timing?.parts.join('/')??null;
+    if(f!==prev||sequence!==prevSequence){rows.push({eias:e,fpa:f,aps:25/f,sequence,cycle:timing?.cycle});prev=f;prevSequence=sequence;}
     if(f===1)break;
   }
   return rows;
@@ -162,10 +166,12 @@ export const ACCURACY={
 };
 export function accuracyTag(attack,form){
   if(CONSTRAINED_SKILLS.has(attack))return ['계산 미지원','고유 시퀀스 자료가 필요하므로 임의의 프레임을 표시하지 않음','unavailable'];
-  if(form!=='human')return ['근사 계산','변신 애니메이션 및 롤백 처리는 후속 검증 필요','approx'];
+  if(isWereform(form))return ['변신 모션 이론 계산','직업·무기별 속도와 물기/휘두르기·분노 롤백을 구분합니다. 리이매진드 및 상한 해제 구간의 실제 타격은 미검증입니다.','theory'];
+  if(SHAPE_SKILLS.has(attack))return ['변신 필요','늑대인간 또는 곰인간 형태를 선택하세요.','unavailable'];
   if(attack==='whirl')return ['훨윈드 이론 계산','양손 프레임 개별 추정 · 쌍수일 때 평균 올림. 실제 패치 히트체크 검증 전','theory'];
   if(ACCURACY.theoretical.has(attack))return ['상한 해제 이론표','과거 대화에서 정리한 1F 확장 이론값이며 실제 타격 판정 미검증','theory'];
   if(ACCURACY.estimated.has(attack))return ['근사 계산','복합 스킬 시퀀스/롤백의 실제 판정 프레임과 다를 수 있음','approx'];
   return ['기본 모션 계산','클래스별 일반 모션을 기반으로 계산. 리이매진드 애니메이션 플러그인 사용 시 차이 가능','base'];
 }
+
 

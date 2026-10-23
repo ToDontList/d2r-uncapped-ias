@@ -4,18 +4,20 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#11131b"><meta name="description" content="D2R Reimagined 공속 상한 해제 계산기. IAS와 스킬 레벨을 입력하고 쌍수 공격 및 1프레임까지의 이론 브레이크포인트를 확인하세요.">
 <title>D2R Reimagined — 공속 제한 해제 계산기</title>
-<link rel="stylesheet" href="./style.css?v=1.7.3">
+<link rel="stylesheet" href="./style.css?v=1.8.0">
 </head>
 <body>
 <div class="top-accent"></div>
-<header class="site-head"><div class="wrap head-row"><a class="logo" href="./"><span class="logo-symbol">◆</span><span><span class="logo-small">DIABLO II · REIMAGINED</span><strong>공격속도 계산기</strong></span></a><div class="head-right"><span class="pill ghost">UNLOCKED IAS</span><span class="build">v1.7.4 · 공속 증가·감소 분리</span></div></div></header>
+<header class="site-head"><div class="wrap head-row"><a class="logo" href="./"><span class="logo-symbol">◆</span><span><span class="logo-small">DIABLO II · REIMAGINED</span><strong>공격속도 계산기</strong></span></a><div class="head-right"><span class="pill ghost">UNLOCKED IAS</span><span class="build">v1.8.0 · 전 직업 변신 공속</span></div></div></header>
 <main class="wrap">
 <div class="hero"><div class="eyebrow"><span class="green-dot"></span> D2R / REIMAGINED · 25 FPS ENGINE</div><h1>공격 프레임을 <span>끝까지.</span></h1><p>기본 공속 상한을 넘어 <b>1프레임까지</b> 탐색하세요. 양손 무기와 소환수 공격도 구분하여 전체 프레임표에서 현재 위치를 확인하세요.</p><div class="hero-actions"><button class="btn slim" id="copyLink">↗ 현재 설정 공유</button><button class="btn slim secondary" id="reset">↺ 초기화</button></div></div>
 <div class="content-grid">
   <section class="column input-column" aria-label="공격 설정">
     <div class="card"><div class="card-head"><div><span class="chapter">01 / ATTACK PROFILE</span><h2>공격 설정</h2></div><span class="tiny-badge">필수 입력</span></div>
-      <div class="fieldgrid"><label class="field"><span>직업</span><select id="class"></select></label><label class="field" id="formField"><span>형태</span><select id="form"><option value="human">인간형</option><option value="wolf">늑대인간 (근사)</option><option value="bear">곰인간 (근사)</option></select></label></div>
+      <div class="fieldgrid"><label class="field"><span>직업</span><select id="class"></select></label><label class="field" id="formField"><span>형태</span><select id="form"><option value="human">인간형</option><option value="wolf">늑대인간</option><option value="bear">곰인간</option></select></label></div>
       <label class="field block"><span>공격 스킬</span><select id="attack"></select></label>
+      <p id="wereHelp" class="helper">모든 직업에서 형태를 늑대인간·곰인간으로 선택하면 해당 변신의 공격 스킬을 계산할 수 있습니다. 클래스리스에서도 현재 캐릭터의 직업을 선택하세요.</p>
+      <label id="furyLevelField" class="field block" hidden><span>분노 스킬 레벨 <small>1~3레벨: 2~4연타 · 4레벨 이상: 5연타</small></span><input id="furyLevel" type="number" min="1" max="200" value="4"></label>
 
       <div id="petConfig" class="pet-panel" hidden>
         <div class="pet-head"><span class="chapter">SUMMON MODE</span><h3 id="petName">소환수 공격속도</h3><p class="helper">선택한 소환수 본인의 공격 모션을 계산합니다. 시전자의 장비 IAS·광분·폭발적인 속도는 자동으로 상속되지 않습니다.</p></div>
@@ -74,6 +76,7 @@
 </main>
 <footer class="wrap foot">독립 커뮤니티 계산기 · Reimagined 및 Diablo II는 해당 권리자에게 귀속됩니다. · 서버 없이 브라우저에서 계산됩니다.</footer>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script type="module" src="./main.js?v=1.7.2"></script>
+<script type="module" src="./main.js?v=1.8.0"></script>
 </body></html>
+
 
