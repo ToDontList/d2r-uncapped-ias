@@ -4,11 +4,11 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#11131b"><meta name="description" content="D2R Reimagined 공속 상한 해제 계산기. IAS와 스킬 레벨을 입력하고 쌍수 공격 및 1프레임까지의 이론 브레이크포인트를 확인하세요.">
 <title>D2R Reimagined — 공속 제한 해제 계산기</title>
-<link rel="stylesheet" href="./style.css?v=1.8.1">
+<link rel="stylesheet" href="./style.css?v=1.8.2">
 </head>
 <body>
 <div class="top-accent"></div>
-<header class="site-head"><div class="wrap head-row"><a class="logo" href="./"><span class="logo-symbol">◆</span><span><span class="logo-small">DIABLO II · REIMAGINED</span><strong>공격속도 계산기</strong></span></a><div class="head-right"><span class="pill ghost">UNLOCKED IAS</span><span class="build">v1.8.1 · 가르기·거울상 칼날 수정</span></div></div></header>
+<header class="site-head"><div class="wrap head-row"><a class="logo" href="./"><span class="logo-symbol">◆</span><span><span class="logo-small">DIABLO II · REIMAGINED</span><strong>공격속도 계산기</strong></span></a><div class="head-right"><span class="pill ghost">UNLOCKED IAS</span><span class="build">v1.8.2 · 전 직업 훨윈드·클러 쌍수</span></div></div></header>
 <main class="wrap">
 <div class="hero"><div class="eyebrow"><span class="green-dot"></span> D2R / REIMAGINED · 25 FPS ENGINE</div><h1>공격 프레임을 <span>끝까지.</span></h1><p>기본 공속 상한을 넘어 <b>1프레임까지</b> 탐색하세요. 양손 무기와 소환수 공격도 구분하여 전체 프레임표에서 현재 위치를 확인하세요.</p><div class="hero-actions"><button class="btn slim" id="copyLink">↗ 현재 설정 공유</button><button class="btn slim secondary" id="reset">↺ 초기화</button></div></div>
 <div class="content-grid">
@@ -56,7 +56,7 @@
     </div>
     <div class="card"><div class="card-head"><div><span class="chapter">03 / CALCULATION RULES</span><h2>상한 및 고급 설정</h2></div></div>
       <label class="field block"><span>공격속도 상한</span><select id="cap"><option value="none">상한 없음 · 이론상 1프레임까지 (기본)</option><option value="500">기존 패치 600 · 총 EIAS 최대 +500</option><option value="924">실험 상한 1024 · 총 EIAS 최대 +924</option><option value="1948">실험 상한 2048 · 총 EIAS 최대 +1948</option></select></label><p class="helper">현재 설치한 패치가 600이라면 반드시 600을 선택해야 실제 제한을 반영합니다. 상한 없음은 미래의 확장 패치를 가정합니다.</p>
-      <details class="fold advanced"><summary>애니메이션 고급 설정</summary><label class="field block"><span>기본 공격 모션 프레임(FPD) 덮어쓰기</span><input id="overrideFrames" type="number" min="0" max="120" value="0"></label><p class="helper">0은 직업·무기별 기본 데이터 사용. 리이매진드의 변경된 모션 프레임을 직접 알고 있을 때만 입력하세요.</p></details>
+      <details class="fold advanced"><summary>애니메이션 고급 설정</summary><label class="field block"><span>기본 모션 FPD / 훨윈드 타격 프레임 덮어쓰기</span><input id="overrideFrames" type="number" min="0" max="120" value="0"></label><p class="helper">0은 직업·무기별 기본 데이터 사용. 리이매진드의 변경된 모션 프레임을 직접 알고 있을 때만 입력하세요.</p></details>
     </div>
   </section>
   <section class="column result-column" aria-label="계산 결과">
@@ -76,8 +76,9 @@
 </main>
 <footer class="wrap foot">독립 커뮤니티 계산기 · Reimagined 및 Diablo II는 해당 권리자에게 귀속됩니다. · 서버 없이 브라우저에서 계산됩니다.</footer>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script type="module" src="./main.js?v=1.8.1"></script>
+<script type="module" src="./main.js?v=1.8.2"></script>
 </body></html>
+
 
 
 

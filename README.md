@@ -229,3 +229,19 @@ PC와 모바일 모두 증가 옵션을 위쪽, 감소 옵션(무기력·신성�
 보너스는 해당 공격을 선택했을 때만 합산합니다. 다른 공격 선택 중에는 입력 아래에 예상 보너스와 적용 조건을 표시합니다. 지원하지 않는 무기는 선택 목록에서 제외합니다. 결과·표·CSV의 속도는 스킬 사용 횟수이며 복제 칼날의 명중 횟수는 계산하지 않습니다. 공속 상한 해제 구간은 이론 외삽이며 게임 실측 미검증입니다.
 
 검증: 레벨 보너스, 12개 무기별 시퀀스, -30 보정, 1F까지의 전환 경계, 장비 IAS 역산 및 상한·다른 스킬 비상속을 테스트했습니다.
+
+
+## v1.8.2 — 전 직업 훨윈드 / 암살자 클러 쌍수
+
+인간형의 모든 직업에 훨윈드를 추가했습니다. Classless로 스킬을 얻는 경우를 포함하며, 변신 형태에는 추가하지 않습니다. 근접 무기를 사용하고, 쌍수는 야만용사(기존 한손 무기 및 양손검)와 암살자(클러 두 개)에서 선택합니다. 스킬 습득이 다른 직업의 쌍수 장착 능력을 부여한다고 가정하지 않습니다.
+
+기존 공통 7/9 타격 프레임을 직업·무기별 기본 공격의 action frame으로 교체했습니다. 암살자 클러는 action frame 6, animation speed 208을 사용합니다. 각 손의 EIAS는 공통 장비 IAS + 해당 무기 IAS의 점감치, 공통 SIAS, 해당 무기 WSM으로 계산합니다. 무기별 프레임은 `max(1, floor(256 * actionFrame / floor(animationSpeed * (100 + max(-85,EIAS)) / 100)))`, 쌍수 공용 간격은 두 프레임 평균의 올림입니다. 투척 단검의 근접 사용은 1HT, 투척 도끼는 1HS입니다. 야만용사 양손검의 훨윈드는 1HS 타격 프레임을 유지합니다.
+
+참조:
+- Blizzard 2.4.3 공식 패치 노트: https://news.blizzard.com/en-gb/article/23814050/diablo-ii-resurrected-patch-2-4-3-now-live — 직업별 기본 공격의 타격 프레임, 쌍수 평균 올림.
+- https://github.com/Warren1001/IAS_Calculator/blob/master/constants.js — 무기별 action frame 수치.
+- https://github.com/Warren1001/IAS_Calculator/blob/master/calculator.js — calculateActionFrame, calculateAnimationSpeed, fpd1, doCoreTableLogic (2026-10-27 확인).
+
+표와 CSV는 지속 훨윈드의 판정 주기입니다. 시작 타격 시점, 적중률, 타겟 수와 실제 명중 횟수는 계산하지 않습니다. 손별 표는 각각의 무기 표이며 쌍수 합산 표가 아닙니다. 공속 상한 해제 1F까지의 값은 참조 공식을 확장한 이론값으로 RC/Loader 게임 내 검증 완료를 의미하지 않습니다. 고급 덮어쓰기 값은 훨윈드에서 전체 모션 길이가 아닌 action frame에 적용됩니다.
+
+검증: `npm test` — 8개 직업, 1847개 프레임 전환 경계, 클러의 정수 경계, 서로 다른 IAS/WSM 쌍수, 무기 교환 대칭, 상한, 무기 제한, 기존 소환수·변신·스킬 회귀 테스트.

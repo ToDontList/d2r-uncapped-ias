@@ -37,11 +37,31 @@ export const ATTACKS={
   ass:[['normal','일반 공격','normal'],['dragonclaw','용의 손톱 / Dragon Claw','frenzy'],['dragontalon','용의 발톱 / Dragon Talon','rollback'],['tiger','호랑이 일격 / Tiger Strike','normal'],['cobra','코브라 일격 / Cobra Strike','normal'],['phoenix','불사조 일격 / Phoenix Strike','normal'],['fists','화염의 주먹 / Fists of Fire','frenzy'],['thunder','천둥의 손톱 / Claws of Thunder','frenzy'],['ice','얼음의 칼날 / Blades of Ice','frenzy'],['traps','덫 설치 / Laying Traps','special']],
   war:[['normal','일반 공격','normal'],['cleave','가르기 / Cleave','special'],['mirrored','거울상 칼날 / Mirrored Blades','special']]
 };
+// Classless/oskill Whirlwind is available in human form for every class.
+for(const list of Object.values(ATTACKS)){if(!list.some(a=>a[0]==='whirl'))list.push(['whirl','훨윈드 / Whirlwind','whirl']);}
 export const DUAL_SKILLS=new Set(['frenzy','double','dthrow','dragonclaw']);
 // Whirlwind: optional dual wield, unlike forced two-weapon Frenzy.
 // Includes two-handed swords that the Barbarian can equip one per hand.
 export const WHIRL_DUAL_TYPES=new Set(['oneSwing','oneThrust','twoSword','throwing']);
-export const whirlDualWeaponAllowed=weapon=>WHIRL_DUAL_TYPES.has(weapon.type);
+export const whirlDualWeaponAllowed=(weapon,char='bar')=>char==='ass'?weapon.type==='claw':char==='bar'&&WHIRL_DUAL_TYPES.has(weapon.type);
+// Basic attack action frames (not full animation length), Warren IAS reference.
+export const WHIRL_ACTION={
+ ama:{oneSwing:10,oneThrust:9,twoSword:12,twoThrust:11,twoOther:12},
+ sor:{oneSwing:12,oneThrust:11,twoSword:14,twoThrust:13,twoOther:11},
+ nec:{oneSwing:9,oneThrust:9,twoSword:11,twoThrust:10,twoOther:11},
+ pal:{oneSwing:7,oneThrust:8,twoSword:8,twoThrust:8,twoOther:9},
+ bar:{oneSwing:7,oneThrust:7,twoSword:7,twoThrust:9,twoOther:9},
+ dru:{oneSwing:9,oneThrust:8,twoSword:10,twoThrust:9,twoOther:9},
+ ass:{oneSwing:7,oneThrust:7,twoSword:11,twoThrust:10,twoOther:9,claw:6},
+ war:{oneSwing:9,oneThrust:8,twoSword:11,twoThrust:11,twoOther:10}
+};
+export function whirlProfile(char,weapon){
+ const type=weapon.type==='throwing'?(['tkf','bkf','9tk','9bk','7tk','7bk'].includes(weapon.code)?'oneThrust':'oneSwing'):weapon.type;
+ const action=WHIRL_ACTION[char]?.[type];
+ return action?{action,speed:type==='claw'?208:256}:null;
+}
+export const whirlWeaponAllowed=(weapon,s)=>!!whirlProfile(s.char,weapon)&&(!s.dual||!['bar','ass'].includes(s.char)||whirlDualWeaponAllowed(weapon,s.char));
 export const CONSTRAINED_SKILLS=new Set(['impale','charge','traps']);
+
 
 

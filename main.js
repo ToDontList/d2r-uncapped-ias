@@ -1,6 +1,6 @@
 import {isWereform,wereAttacks,SHAPE_SKILLS} from './wereforms.js?v=1.8.0';
-import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlDualWeaponAllowed,OLD_AUTO_WSM} from './data.js?v=1.8.1';
-import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num,barbarianSwordGrip,getMotion,isWarlockSequence,warlockSequenceFrames} from './core.js?v=1.8.1';
+import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlWeaponAllowed,whirlProfile,OLD_AUTO_WSM} from './data.js?v=1.8.2';
+import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num,barbarianSwordGrip,getMotion,isWarlockSequence,warlockSequenceFrames} from './core.js?v=1.8.2';
 import {SUMMON_ATTACKS,isSummonAttack,petProfile,petFrames,petBonuses,calculatePet,petRequiredItemIAS} from './summons.js?v=1.7.2';
 for(const [classId,entries] of Object.entries(SUMMON_ATTACKS)){if(ATTACKS[classId])ATTACKS[classId].push(...entries.map(([id,label])=>[id,label,'summon']));}
 const $=id=>document.getElementById(id);
@@ -21,7 +21,7 @@ function restore(){let fromUrl=null;try{fromUrl=new URL(location.href).searchPar
 function persist(){try{localStorage.setItem('ias_reimagined_v1',packed())}catch(e){}}
 function weaponFor(hand){const item=WEAPONS.find(w=>w.id===s[hand==='main'?'weaponMain':'weaponOff'])||WEAPONS[0];const wsm=hand==='main'?s.wsmMain:s.wsmOff;return {...item,wsm:wsm===null?item.wsm:num(wsm,item.wsm)};}
 function refreshWeapons(hand){const main=hand==='main';const search=$(main?'searchMain':'searchOff').value.trim().toLowerCase(),select=$(main?'weaponMain':'weaponOff');const current=s[main?'weaponMain':'weaponOff'];const prevSearchResult=WEAPONS.find(w=>w.id===current);
- const allowed=(w)=>isWarlockSequence(s.attack)?warlockSequenceFrames(s,w)!==null:s.attack==='whirl'&&s.dual?whirlDualWeaponAllowed(w):s.attack==='dthrow'?w.group==='투척 무기'||w.group==='투창':s.attack==='dragonclaw'?w.type==='claw':s.attack==='strafe'?['bow','xbow'].includes(w.type):s.attack==='lf'?['oneThrust','throwing'].includes(w.type):true;
+ const allowed=(w)=>isWarlockSequence(s.attack)?warlockSequenceFrames(s,w)!==null:s.attack==='whirl'?whirlWeaponAllowed(w,s):s.attack==='dthrow'?w.group==='투척 무기'||w.group==='투창':s.attack==='dragonclaw'?w.type==='claw':s.attack==='strafe'?['bow','xbow'].includes(w.type):s.attack==='lf'?['oneThrust','throwing'].includes(w.type):true;
  const items=WEAPONS.filter(w=>allowed(w)&&(!search||w.name.toLowerCase().includes(search)||w.group.includes(search)));
  const groups=[...new Set(items.map(w=>w.group))];select.innerHTML='';for(const group of groups){const gp=document.createElement('optgroup');gp.label=group;for(const w of items.filter(w=>w.group===group)){const opt=document.createElement('option');opt.value=w.id;opt.textContent=`${w.name}    (WSM ${padSign(w.wsm)})`;gp.appendChild(opt)}select.appendChild(gp)}
  if(items.some(w=>w.id===current))select.value=current;else if(items.length){select.value=items[0].id;s[main?'weaponMain':'weaponOff']=items[0].id;s[main?'wsmMain':'wsmOff']=null;}
@@ -149,11 +149,11 @@ function renderPet(){
    table.appendChild(tr);
  }
 }
-function render(){const petMode=isSummonAttack(s.attack);document.body.classList.toggle('pet-mode',petMode);$('petConfig').hidden=!petMode;$('furyLevelField').hidden=petMode||s.form!=='wolf'||s.attack!=='fury';$('wereHelp').hidden=petMode;if(petMode){renderPet();return;}$('bpIASHeader').textContent='필요 장비 IAS';$('bpRateHeader').textContent=isWarlockSequence(s.attack)?'초당 사용(이론)':'초당 타격';const main=weaponFor('main'),off=weaponFor('off');const required=DUAL_SKILLS.has(s.attack);
- const whirlOptional=s.char==='bar'&&s.attack==='whirl';
+function render(){const petMode=isSummonAttack(s.attack);document.body.classList.toggle('pet-mode',petMode);$('petConfig').hidden=!petMode;$('furyLevelField').hidden=petMode||s.form!=='wolf'||s.attack!=='fury';$('wereHelp').hidden=petMode;if(petMode){renderPet();return;}$('bpIASHeader').textContent='필요 장비 IAS';$('bpRateHeader').textContent=s.attack==='whirl'?'초당 판정 주기(이론)':isWarlockSequence(s.attack)?'초당 사용(이론)':'초당 타격';const main=weaponFor('main'),off=weaponFor('off');const required=DUAL_SKILLS.has(s.attack);
+ const whirlOptional=['bar','ass'].includes(s.char)&&s.attack==='whirl';
  const dualAvailable=!isWereform(s.form)&&((['bar','ass'].includes(s.char)&&s.attack==='normal')||whirlOptional);
  const dual=required||(dualAvailable&&s.dual);
- $('dual').disabled=required||!dualAvailable;$('dual').checked=required||s.dual&&dualAvailable;$('dualNotice').textContent=required?'이 스킬은 쌍수 필수':whirlOptional?'훨윈드는 한손/쌍수 모두 가능':dualAvailable?'일반 공격에서 쌍수를 사용한다면 켜세요':'';
+ $('dual').disabled=required||!dualAvailable;$('dual').checked=required||s.dual&&dualAvailable;$('dualNotice').textContent=required?'이 스킬은 쌍수 필수':whirlOptional?(s.char==='ass'?'클러 한 개 / 클러 쌍수 선택 가능':'훨윈드는 한손/쌍수 모두 가능'):dualAvailable?'일반 공격에서 쌍수를 사용한다면 켜세요':'';
  $('offHandHelper').textContent=whirlOptional?'훨윈드는 두 무기의 속도를 각각 계산하고, 쌍수 판정 간격은 평균 후 올림한 추정값으로 표시합니다.':'쌍수 스킬은 양손 IAS를 각각 반영합니다.';
  $('offBox').hidden=!dual;$('offTab').hidden=!dual;if(!dual)activeHand='main';
  $('offTab').classList.toggle('active',activeHand==='off');document.querySelector('[data-hand="main"]').classList.toggle('active',activeHand==='main');
@@ -170,14 +170,15 @@ function render(){const petMode=isSummonAttack(s.attack);document.body.classList
    :'같은 양손검 WSM을 유지하고 공격 모션만 1HS(16) / 2HS(18)로 바꿉니다.';
  const result=calculate(s,main,dual?off:null);last=result;const [label,detail,kind]=accuracyTag(s.attack,s.form);
  $('accuracy').textContent=label;$('accuracy').className='status'+(kind==='unavailable'?' warn':kind==='approx'?' dim':'');$('accuracyDetail').textContent=`${label}: ${detail}`;
- $('frameLabel').textContent=isWarlockSequence(s.attack)?'스킬 1회 사용 프레임':result.were&&s.attack==='fury'?'분노 연타 평균 프레임':result.whirlDual?'쌍수 훨윈드 예상 판정 간격':'평균 공격 프레임';
+ $('frameLabel').textContent=isWarlockSequence(s.attack)?'스킬 1회 사용 프레임':result.were&&s.attack==='fury'?'분노 연타 평균 프레임':s.attack==='whirl'?(result.whirlDual?'쌍수 훨윈드 예상 판정 간격':'훨윈드 예상 판정 간격'):'평균 공격 프레임';
  writePlain('currentFrame',fstr(result.avg));
- writePlain('aps',isWarlockSequence(s.attack)?(result.cycleRate===null?'지원하는 무기를 선택하세요':`초당 약 ${result.cycleRate.toFixed(2)}회 사용 · 이론값`):result.whirlDual?'두 무기별 추정 프레임을 평균 후 올림 · 타격 횟수 미검증':result.hitRate===null?'정확한 프레임 계산 불가':`초당 약 ${result.hitRate.toFixed(2)}타 · 25FPS 기준`);
+ writePlain('aps',isWarlockSequence(s.attack)?(result.cycleRate===null?'지원하는 무기를 선택하세요':`초당 약 ${result.cycleRate.toFixed(2)}회 사용 · 이론값`):s.attack==='whirl'?(result.cycleRate===null?'지원하는 근접 무기를 선택하세요':`초당 약 ${result.cycleRate.toFixed(2)}회 판정 주기 · 실제 명중 횟수와 다름`):result.hitRate===null?'정확한 프레임 계산 불가':`초당 약 ${result.hitRate.toFixed(2)}타 · 25FPS 기준`);
  writePlain('totalEias',result.dual?`${padSign(result.mainE.raw)} / ${padSign(result.offE.raw)}`:padSign(result.mainE.raw));
  const mainRows=getBreakpoints(s,main),next=nearest(mainRows,capEias(result.mainE.raw,result.cap)).next;
  writePlain('nextBP',next?`${fstr(next.fpa)}F · ${padSign(next.eias)} EIAS`:'최고 구간');
  $('handResults').hidden=!result.dual;if(result.dual){writePlain('mainFrame',frameText(result.mainF));writePlain('offFrame',frameText(result.offF));writePlain('mainEias',`총 EIAS ${padSign(result.mainE.raw)}`);writePlain('offEias',`총 EIAS ${padSign(result.offE.raw)}`)}
  const messages=[];
+ if(s.attack==='whirl'){const p=whirlProfile(s.char,main);if(p)messages.push(`직업별 기본 타격 프레임 ${num(s.overrideFrames)>0?s.overrideFrames:p.action}, 애니메이션 속도 ${p.speed} 기준입니다. 표는 지속 훨윈드의 판정 간격이며 시작 타격 시점·실제 명중 횟수는 포함하지 않습니다. 상한 해제 구간은 게임 실측 미검증입니다.${s.char==='ass'?' 클러 쌍수는 각 손의 무기 IAS·WSM을 독립 반영합니다.':''}`);}
  if(isWarlockSequence(s.attack))messages.push('레벨 공속은 선택한 공격 스킬에만 적용됩니다. 전용 시퀀스 속도 보정 −30을 합산하며, 보너스 상세 내역에서 확인할 수 있습니다. 프레임은 스킬 사용 주기입니다. 거울상 칼날의 복제 공격 수·명중 횟수는 별도입니다.');
  if(result.were){const w=result.were;messages.push(`${s.form==='wolf'?'늑대인간':'곰인간'} ${s.attack==='fury'?'분노 연타':w.bite?'물기 (S3)':'휘두르기 (A1)'}: 인간형 기본 ${w.humanFrames} FPD, 변신 모션 ${w.length} FPD.${s.attack==='fury'?` ${w.hits}연타: ${w.parts.join(' / ')}F · 한 사이클 ${w.cycle}F · 평균 ${fstr(w.fpa)}F.`:''} 주무기를 기준으로 계산합니다. 1F 표시는 이론상 최소 구간이며 실제 명중 횟수를 보증하지 않습니다.`);}
 
@@ -217,12 +218,13 @@ function setup(){setupBuffIndicators();restore();sync();$('class').addEventListe
  $('jumpCurrent').addEventListener('click',()=>{const row=$('tableCurrent');if(row){row.scrollIntoView({block:'center',behavior:'smooth'});toast('현재 EIAS 구간을 표시했어요')}else toast('현재 구간을 표시할 수 없습니다')});
  $('exportCSV').addEventListener('click',()=>{
   if(isSummonAttack(s.attack)){const result=calculatePet(s),csv=[`프레임,필요_총_EIAS,${result.profile.fpd?'추가_필요_EIAS':'필요_소환수_장비_IAS_퍼센트'},초당_애니메이션_이론,검증_상태`];for(const bp of result.rows){const req=result.profile.fpd?Math.max(0,bp.eias-result.bonuses.total):petRequiredItemIAS(s,bp.eias);csv.push(`${bp.fpa},${bp.eias},${req===null?'스킬공속필요':req},${bp.aps.toFixed(3)},${result.profile.fpd?'A1/A2이론계산':bp.extrapolated?'이론외삽':'기존참조표'}`)}const blob=new Blob(['\ufeff'+csv.join('\r\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='D2R_Reimagined_Summon_IAS_breakpoints.csv';document.body.appendChild(a);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);a.remove();toast('소환수 공속표 CSV 저장');return;}
-  const weaponMain=weaponFor('main'),weaponOff=weaponFor('off');const hands=last?.dual?['main','off']:['main'];const csv=[['손','프레임','필요 총 EIAS','필요 장비 IAS(%)',isWarlockSequence(s.attack)?'초당 스킬 사용 횟수(이론)':'초당 공격 횟수','상한 초과','변신 연타 구간(F)','사이클(F)'].join(',')];
+  const weaponMain=weaponFor('main'),weaponOff=weaponFor('off');const hands=last?.dual?['main','off']:['main'];const csv=[['손','프레임','필요 총 EIAS','필요 장비 IAS(%)',s.attack==='whirl'?'초당 판정 주기(이론)':isWarlockSequence(s.attack)?'초당 스킬 사용 횟수(이론)':'초당 공격 횟수','상한 초과','변신 연타 구간(F)','사이클(F)'].join(',')];
   for(const hand of hands){const w=hand==='main'?weaponMain:weaponOff;for(const bp of getBreakpoints(s,w)){const req=requiredEquipmentIAS(s,weaponMain,last?.dual?weaponOff:null,hand,bp.eias);csv.push([hand==='main'?'주무기':'보조무기',bp.fpa,bp.eias,req??'스킬 공속 필요',bp.aps.toFixed(3),last?.cap!==null&&bp.eias>last.cap?'Y':'N',bp.sequence??'',bp.cycle??''].join(','))}}
   const blob=new Blob(['\ufeff'+csv.join('\r\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='D2R_Reimagined_IAS_breakpoints.csv';document.body.appendChild(a);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);a.remove();toast('프레임표 CSV를 저장했어요')
  });
 }
 setup();
+
 
 
 

@@ -1,5 +1,5 @@
 import {isWereform,wereTiming,SHAPE_SKILLS} from './wereforms.js?v=1.8.0';
-import {MOTION,DUAL_SKILLS,CONSTRAINED_SKILLS} from './data.js?v=1.8.1';
+import {MOTION,DUAL_SKILLS,CONSTRAINED_SKILLS,whirlProfile,whirlWeaponAllowed} from './data.js?v=1.8.2';
 
 export const FRENZY_BPS=[
  [-85,100],[0,12.5],[2,12],[5,11.5],[8,11],[12,10.5],[16,10],[20,9.5],[25,9],
@@ -56,7 +56,7 @@ export function dualEnabled(s){
   if(isWereform(s.form))return false;
   return DUAL_SKILLS.has(s.attack)||(!!s.dual&&(
     (s.attack==='normal'&&['bar','ass'].includes(s.char))||
-    (s.attack==='whirl'&&s.char==='bar')
+    (s.attack==='whirl'&&['bar','ass'].includes(s.char))
   ));
 }
 // Barbarian two-handed swords have two A1 grip animations:
@@ -103,8 +103,11 @@ export function frameFromEias(s,weapon,eias){
     let f=FRENZY_BPS[0][1];for(const [threshold,next] of FRENZY_BPS){if(eias>=threshold)f=next;else break;}return f;
   }
   if(s.attack==='whirl'){
-    const base=weapon.type==='twoOther'||weapon.type==='twoThrust'?9:7;
-    return Math.max(1,Math.floor(256*base/Math.max(1,Math.floor(256*(100+eias)/100))));
+    const profile=whirlProfile(s.char,weapon);
+    if(!profile||!whirlWeaponAllowed(weapon,s))return null;
+    const action=num(s.overrideFrames)>0?num(s.overrideFrames):profile.action;
+    const rate=Math.max(1,Math.floor(profile.speed*(100+Math.max(-85,eias))/100));
+    return Math.max(1,Math.floor(256*action/rate));
   }
   if(s.attack==='double'||s.attack==='dthrow'||s.attack==='dragonclaw'){
     return Math.max(1,Math.ceil(singleFPS(getMotion(s,weapon),eias,s.form,s.attack)*0.62*2)/2);
@@ -132,14 +135,14 @@ export function calculate(s,main,off){
   let offE=null,offF=null;
   if(dual){offE=handEias(s,main,off,'off');offF=frameFromEias(s,off,capEias(offE.raw,cap));}
   // Blizzard 2.4.3: dual-wield Whirlwind attack frames are averaged and rounded UP.
-  // Each single-hand 'whirl' FPA is still a high-speed THEORETICAL approximation;
+  // Class/weapon action frames and animation speed determine each hand's interval;
   // the custom cap-removal patch's hit-check loop has not been independently verified.
   const whirlDual=s.attack==='whirl'&&dual;
   const avg=mainF===null||dual&&offF===null?null
     :whirlDual?Math.ceil((mainF+offF)/2)
     :dual?(mainF+offF)/2:mainF;
   return {were:isWereform(s.form)?wereTiming(s,main,mainShown):null,cap,dual,whirlDual,mainE,offE,mainF,offF,avg,
-    cycleRate:avg?25/avg:null,hitRate:whirlDual||isWarlockSequence(s.attack)?null:avg?25/avg:null,
+    cycleRate:avg?25/avg:null,hitRate:s.attack==='whirl'||isWarlockSequence(s.attack)?null:avg?25/avg:null,
     mainUncapped:frameFromEias(s,main,mainE.raw),offUncapped:dual?frameFromEias(s,off,offE.raw):null};
 }
 // Every transition in theoretical total EIAS from -85..1300, including 1F.
@@ -186,11 +189,12 @@ export function accuracyTag(attack,form){
   if(isWereform(form))return ['변신 모션 이론 계산','직업·무기별 속도와 물기/휘두르기·분노 롤백을 구분합니다. 리이매진드 및 상한 해제 구간의 실제 타격은 미검증입니다.','theory'];
   if(SHAPE_SKILLS.has(attack))return ['변신 필요','늑대인간 또는 곰인간 형태를 선택하세요.','unavailable'];
   if(isWarlockSequence(attack))return ['전용 시퀀스 이론 계산','무기별 SQ 모션과 레벨 공속·시퀀스 -30 보정을 적용합니다. 프레임은 스킬 사용 1회의 길이이며 복제 공격 수가 아닙니다. 상한 해제 실제 판정은 미검증입니다.','theory'];
-  if(attack==='whirl')return ['훨윈드 이론 계산','양손 프레임 개별 추정 · 쌍수일 때 평균 올림. 실제 패치 히트체크 검증 전','theory'];
+  if(attack==='whirl')return ['훨윈드 이론 계산','직업별 타격 프레임 · 클러 속도 208 · 쌍수 평균 올림. 시작 타격과 상한 해제 실제 판정은 미검증','theory'];
   if(ACCURACY.theoretical.has(attack))return ['상한 해제 이론표','과거 대화에서 정리한 1F 확장 이론값이며 실제 타격 판정 미검증','theory'];
   if(ACCURACY.estimated.has(attack))return ['근사 계산','복합 스킬 시퀀스/롤백의 실제 판정 프레임과 다를 수 있음','approx'];
   return ['기본 모션 계산','클래스별 일반 모션을 기반으로 계산. 리이매진드 애니메이션 플러그인 사용 시 차이 가능','base'];
 }
+
 
 
 
