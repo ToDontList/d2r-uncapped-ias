@@ -2,7 +2,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node test_core.mjs && node test_summons_v17.mjs && node test_wereforms.mjs && node test_warlock_sequences.mjs && node test_whirlwind.mjs"
+    "test": "node test_core.mjs && node test_summons_v17.mjs && node test_wereforms.mjs && node test_warlock_sequences.mjs && node test_whirlwind.mjs",
+    "test:browser": "playwright test",
+    "test:all": "npm test && npm run test:browser"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
   }
 }
-
