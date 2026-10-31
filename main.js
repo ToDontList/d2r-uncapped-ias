@@ -22,7 +22,14 @@ function persist(){try{localStorage.setItem('ias_reimagined_v1',packed())}catch(
 function weaponFor(hand){const item=WEAPONS.find(w=>w.id===s[hand==='main'?'weaponMain':'weaponOff'])||WEAPONS[0];const wsm=hand==='main'?s.wsmMain:s.wsmOff;return {...item,wsm:wsm===null?item.wsm:num(wsm,item.wsm)};}
 function refreshWeapons(hand){const main=hand==='main';const search=$(main?'searchMain':'searchOff').value.trim().toLowerCase(),select=$(main?'weaponMain':'weaponOff');const current=s[main?'weaponMain':'weaponOff'];const prevSearchResult=WEAPONS.find(w=>w.id===current);
  const allowed=(w)=>isWarlockSequence(s.attack)?warlockSequenceFrames(s,w)!==null:s.attack==='whirl'?whirlWeaponAllowed(w,s):s.attack==='dthrow'?w.group==='투척 무기'||w.group==='투창':s.attack==='dragonclaw'?w.type==='claw':s.attack==='strafe'?['bow','xbow'].includes(w.type):s.attack==='lf'?['oneThrust','throwing'].includes(w.type):true;
- const items=WEAPONS.filter(w=>allowed(w)&&(!search||w.name.toLowerCase().includes(search)||w.group.includes(search)));
+ const allowedItems=WEAPONS.filter(allowed);
+ let items=allowedItems.filter(w=>!search||w.name.toLowerCase().includes(search)||w.group.includes(search));
+ // A mode change can invalidate the equipped weapon AND every search result
+ // (e.g. Assassin: Crystal Sword search -> dual claws). Let the normal fallback
+ // select a legal base and reset its WSM instead of retaining an invalid weapon.
+ if(!items.length&&allowedItems.length&&!allowedItems.some(w=>w.id===current)){
+   $(main?'searchMain':'searchOff').value='';items=allowedItems;
+ }
  const groups=[...new Set(items.map(w=>w.group))];select.innerHTML='';for(const group of groups){const gp=document.createElement('optgroup');gp.label=group;for(const w of items.filter(w=>w.group===group)){const opt=document.createElement('option');opt.value=w.id;opt.textContent=`${w.name}    (WSM ${padSign(w.wsm)})`;gp.appendChild(opt)}select.appendChild(gp)}
  if(items.some(w=>w.id===current))select.value=current;else if(items.length){select.value=items[0].id;s[main?'weaponMain':'weaponOff']=items[0].id;s[main?'wsmMain':'wsmOff']=null;}
  if(!items.length){select.innerHTML='<option value="">검색 결과가 없습니다</option>';}
