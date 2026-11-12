@@ -9,7 +9,9 @@ export const CLASSES = [
 ];
 // Animation frames per direction for common attacks; not a replacement for all sequence data.
 export const MOTION = {
-  ama:{bare:13,oneSwing:16,oneThrust:15,twoSword:20,twoThrust:18,twoOther:20,bow:14,xbow:20,throwing:16,claw:16},
+  // Reimagined Classless test calibration: Amazon crossbow attacks use 18 FPD
+  // (normal, multishot, strafe and other crossbow skills). WSM stays weapon-specific.
+  ama:{bare:13,oneSwing:16,oneThrust:15,twoSword:20,twoThrust:18,twoOther:20,bow:14,xbow:18,throwing:16,claw:16},
   sor:{bare:16,oneSwing:20,oneThrust:19,twoSword:24,twoThrust:23,twoOther:18,bow:17,xbow:20,throwing:20,claw:20},
   nec:{bare:15,oneSwing:19,oneThrust:19,twoSword:23,twoThrust:24,twoOther:20,bow:18,xbow:20,throwing:20,claw:19},
   pal:{bare:14,oneSwing:15,oneThrust:17,twoSword:18,twoThrust:20,twoOther:18,bow:16,xbow:20,throwing:16,claw:15},
