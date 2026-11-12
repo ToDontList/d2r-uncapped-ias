@@ -1,5 +1,5 @@
 import {isWereform,wereTiming,SHAPE_SKILLS} from './wereforms.js?v=1.8.0';
-import {MOTION,DUAL_SKILLS,CONSTRAINED_SKILLS,whirlProfile,whirlWeaponAllowed} from './data.js?v=1.8.2';
+import {MOTION,DUAL_SKILLS,CONSTRAINED_SKILLS,whirlProfile,whirlWeaponAllowed} from './data.js?v=1.8.3';
 
 export const FRENZY_BPS=[
  [-85,100],[0,12.5],[2,12],[5,11.5],[8,11],[12,10.5],[16,10],[20,9.5],[25,9],
