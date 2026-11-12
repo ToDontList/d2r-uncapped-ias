@@ -1,6 +1,6 @@
 import {isWereform,wereAttacks,SHAPE_SKILLS} from './wereforms.js?v=1.8.0';
-import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlWeaponAllowed,whirlProfile,OLD_AUTO_WSM} from './data.js?v=1.8.2';
-import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num,barbarianSwordGrip,getMotion,isWarlockSequence,warlockSequenceFrames} from './core.js?v=1.8.2';
+import {CLASSES,WEAPONS,ATTACKS,DUAL_SKILLS,TYPES,whirlWeaponAllowed,whirlProfile,OLD_AUTO_WSM} from './data.js?v=1.8.3';
+import {calculate,getBreakpoints,nearest,buffs,dualEnabled,capEias,requiredEquipmentIAS,accuracyTag,num,barbarianSwordGrip,getMotion,isWarlockSequence,warlockSequenceFrames} from './core.js?v=1.8.3';
 import {SUMMON_ATTACKS,isSummonAttack,petProfile,petFrames,petBonuses,calculatePet,petRequiredItemIAS} from './summons.js?v=1.7.2';
 for(const [classId,entries] of Object.entries(SUMMON_ATTACKS)){if(ATTACKS[classId])ATTACKS[classId].push(...entries.map(([id,label])=>[id,label,'summon']));}
 const $=id=>document.getElementById(id);
